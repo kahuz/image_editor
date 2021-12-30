@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="3rdParty\imgui\imgui_widgets.cpp">
+      <Filter>3rdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\imgui.cpp">
+      <Filter>3rdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\imgui_demo.cpp">
+      <Filter>3rdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\imgui_draw.cpp">
+      <Filter>3rdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\imgui_tables.cpp">
+      <Filter>3rdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\backends\imgui_impl_glfw.cpp">
+      <Filter>3rdParty\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\backends\imgui_impl_opengl3.cpp">
+      <Filter>3rdParty\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="3rdParty\glfw\include\GLFW\glfw3.h">
+      <Filter>3rdParty\glfw\include\GLFW</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\glfw\include\GLFW\glfw3native.h">
+      <Filter>3rdParty\glfw\include\GLFW</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\imgui.h">
+      <Filter>3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\imgui_internal.h">
+      <Filter>3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\imconfig.h">
+      <Filter>3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\backends\imgui_impl_glfw.h">
+      <Filter>3rdParty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\backends\imgui_impl_opengl3.h">
+      <Filter>3rdParty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\backends\imgui_impl_opengl3_loader.h">
+      <Filter>3rdParty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\stb\stb_image_write.h">
+      <Filter>3rdParty\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\stb\stb_image.h">
+      <Filter>3rdParty\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\nativefiledialog\include\nfd.h">
+      <Filter>3rdParty\nativefiledialog</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\imstb_truetype.h">
+      <Filter>3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\imstb_rectpack.h">
+      <Filter>3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\imstb_textedit.h">
+      <Filter>3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Logger.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{19b8cf29-7db1-4662-bd2c-b2e8ffb1b4da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdParty">
+      <UniqueIdentifier>{df0be5c3-759e-473f-869e-d5bcd8c79fd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdParty\glfw">
+      <UniqueIdentifier>{3aa6bd0d-bf1e-4184-8509-53b2a5b9a793}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdParty\imgui">
+      <UniqueIdentifier>{2d4d31bc-3a1c-4aaa-ba2a-4e5bd174dfe0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdParty\nativefiledialog">
+      <UniqueIdentifier>{055081e3-0a28-4e0e-bed8-8e80a88e65c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdParty\stb">
+      <UniqueIdentifier>{df74d226-069a-4368-8ad7-c727d3b9781b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdParty\glfw\include">
+      <UniqueIdentifier>{5a719a27-7e9c-417c-a446-9d46522ebc3b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdParty\glfw\include\GLFW">
+      <UniqueIdentifier>{87122a78-b6a6-415b-b9a6-0bba68e0f8aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdParty\imgui\backends">
+      <UniqueIdentifier>{2f47d89e-9e8b-4102-bf3f-76388a490fa3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

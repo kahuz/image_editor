@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="소스 파일\3rdParty">
+      <UniqueIdentifier>{dd52f239-3007-4dd6-b897-7a3628c08a82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\3rdParty\nativefiledialog">
+      <UniqueIdentifier>{7b46e9ae-0501-4a06-8139-c79e5a018b84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\3rdParty\imgui">
+      <UniqueIdentifier>{892f0280-fb3f-46cc-b2f4-29558f05692f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\3rdParty\glfw">
+      <UniqueIdentifier>{e219bf31-c135-4b1c-9755-9e0e5703393d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\3rdParty\glfw\include">
+      <UniqueIdentifier>{30e5da59-c4df-4bc6-a071-f62c3f0fbf74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\3rdParty\glfw\include\GLFW">
+      <UniqueIdentifier>{19a0cbd7-9050-4abb-8dc5-a12f502ac308}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\3rdParty\imgui\backends">
+      <UniqueIdentifier>{fcd0af95-f55f-4686-89b8-ba51ccdf9443}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\3rdParty\stb">
+      <UniqueIdentifier>{a22ee3b5-32dd-4b2a-a3e2-795f37ab2da3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\3rdParty\nativefiledialog\include">
+      <UniqueIdentifier>{2b0e1512-3a7c-4f37-b4a3-d8f296a94a98}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\imgui.cpp">
+      <Filter>소스 파일\3rdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\imgui_demo.cpp">
+      <Filter>소스 파일\3rdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\imgui_draw.cpp">
+      <Filter>소스 파일\3rdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\imgui_tables.cpp">
+      <Filter>소스 파일\3rdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\imgui_widgets.cpp">
+      <Filter>소스 파일\3rdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\backends\imgui_impl_glfw.cpp">
+      <Filter>소스 파일\3rdParty\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\imgui\backends\imgui_impl_opengl3.cpp">
+      <Filter>소스 파일\3rdParty\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="3rdParty\imgui\imconfig.h">
+      <Filter>소스 파일\3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\imgui.h">
+      <Filter>소스 파일\3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\imgui_internal.h">
+      <Filter>소스 파일\3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\imstb_rectpack.h">
+      <Filter>소스 파일\3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\imstb_textedit.h">
+      <Filter>소스 파일\3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\imstb_truetype.h">
+      <Filter>소스 파일\3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\backends\imgui_impl_glfw.h">
+      <Filter>소스 파일\3rdParty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\backends\imgui_impl_opengl3.h">
+      <Filter>소스 파일\3rdParty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\imgui\backends\imgui_impl_opengl3_loader.h">
+      <Filter>소스 파일\3rdParty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\stb\stb_image.h">
+      <Filter>소스 파일\3rdParty\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\nativefiledialog\include\nfd.h">
+      <Filter>소스 파일\3rdParty\nativefiledialog\include</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\glfw\include\GLFW\glfw3.h">
+      <Filter>소스 파일\3rdParty\glfw\include\GLFW</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\glfw\include\GLFW\glfw3native.h">
+      <Filter>소스 파일\3rdParty\glfw\include\GLFW</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Logger.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdParty\stb\stb_image_write.h">
+      <Filter>소스 파일\3rdParty\stb</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
