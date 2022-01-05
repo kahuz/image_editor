@@ -539,8 +539,14 @@ void RawConvertImages(MenuItems *items, PNGItem *item, bool is_direct)
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
 void CreateImageItems(MenuItems *items)
 {
+	int image_idx = 0;
+
 	for (auto png_path : items->v_open_png_path)
 	{
+		if (items->v_png_item.size() > image_idx++)
+		{
+			continue;
+		}
 		PNGItem input_png_item;
 		PNGItem margin_png_item;
 
