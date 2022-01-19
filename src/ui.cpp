@@ -17,8 +17,6 @@
 int g_preview_video_idx = 0;
 // modal에 표시될 string 변수
 std::string g_modal_str;
-// preview의 zoom 배율 변수
-float g_zoom_ratio = 1.0;
 // 특정 액션에 따라 modal을 띄우기 위한 boolean 변수
 bool g_open_modal = false;
 // image view에 대한 zoom 활성화 여부 변수
@@ -78,35 +76,34 @@ GLuint GetTextureId(const void *img_data, int width, int height, int channel)
 
 	return tex_id;
 }
-//@breif image tool의 설정 값들을 설정하는 UI
+//@breif 현재 마우스가 위치한 ImGui Window widget에 releative한 위치를 반환하는 함수
+ImVec2 GetMousePosInCurrentView()
+{
+	ImVec2 cur_mouse_pos(0, 0);
+
+	auto io = ImGui::GetIO();
+
+	cur_mouse_pos.x = io.MousePos.x - ImGui::GetCursorScreenPos().x - ImGui::GetScrollX();
+	cur_mouse_pos.y = io.MousePos.y - ImGui::GetCursorScreenPos().y - ImGui::GetScrollY();
+
+	return cur_mouse_pos;
+}
+//@breif Image List View에서 선택된 Item의 프로퍼티 정보를 보여주는 UI
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
-void DrawSettingsView(MenuItems *items)
+void DrawPropertyView(UIItems *items)
 {
 	static bool open = true;
-	static std::string zoom_btn_str("Zoom Off");
 
 	const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-	// image list view 의 위치, 크기 설정
-	ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + UI_SETTINGS_VIEW_POS_X, main_viewport->WorkPos.y + UI_SETTINGS_VIEW_POS_Y), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(UI_SETTINGS_VIEW_SIZE_W, UI_SETTINGS_VIEW_SIZE_H), ImGuiCond_FirstUseEver);
+
+	// Item Property view 의 위치, 크기 설정
+	ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + UI_PROPERTY_VIEW_POS_X, main_viewport->WorkPos.y + UI_PROPERTY_VIEW_POS_Y), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(UI_PROPERTY_VIEW_SIZE_W, UI_PROPERTY_VIEW_SIZE_H), ImGuiCond_FirstUseEver);
 	// UI에 라운딩 추가, 이뻐서
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI_VIEW_DEFALUT_ROUND);
 
-	ImGui::Begin(UI_SETTINGS_VIEW_TITLE, &open);
+	ImGui::Begin(UI_PROPERTY_VIEW_TITLE, &open);
 	{
-		if (g_zoom_state)
-		{
-			zoom_btn_str = "Zoom On";
-		}
-		else
-		{
-			zoom_btn_str = "Zoom off";
-		}
-
-		if (ImGui::Button(zoom_btn_str.c_str()))
-		{
-			g_zoom_state = !g_zoom_state;
-		}
 
 	}
 	ImGui::PopStyleVar();
@@ -114,7 +111,7 @@ void DrawSettingsView(MenuItems *items)
 }
 //@breif MenuBar를 통해 open한 이미지 리스트를 보여주는 함수
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
-void DrawImageListView(MenuItems *items)
+void DrawImageListView(UIItems *items)
 {
 	static bool open = true;
 	ImGuiWindowFlags img_view_flags = ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar;
@@ -132,6 +129,8 @@ void DrawImageListView(MenuItems *items)
 		// image, name, visible로 구성됨
 		static int image_table_columns = 3;
 
+		ImVec2 mouse_pos = GetMousePosInCurrentView();
+
 		// image list를 표현하기 위한 table ui
 		if (ImGui::BeginTable("Image Tables", image_table_columns, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings))
 		{
@@ -144,8 +143,8 @@ void DrawImageListView(MenuItems *items)
 			int cur_idx = 0;
 			int active_item_num = 0;
 
-			// open한 이미지 리스트 ( v_png_item ) 로부터 image list에 보여줄 이미지 아이템 ( item ) 를 호출
-			for (auto item : items->v_png_item)
+			// open한 이미지 리스트 ( v_img_item ) 로부터 image list에 보여줄 이미지 아이템 ( item ) 를 호출
+			for (auto item : items->v_img_item)
 			{
 				float table_column_size = UI_IMAGE_LIST_VIEW_SIZE_W / image_table_columns;
 				float image_ratio = item.width > item.height ? item.width / table_column_size : item.height / table_column_size;
@@ -155,7 +154,7 @@ void DrawImageListView(MenuItems *items)
 				{
 					if (g_image_table_selected[cur_idx])
 					{
-						GLuint tex_id = GetTextureId(item.data, item.width, item.height, item.Channels);
+						GLuint tex_id = GetTextureId(item.data, item.width, item.height, item.channels);
 
 						ImGui::Image(
 							(ImTextureID)(intptr_t)tex_id,
@@ -224,10 +223,11 @@ void DrawImageListView(MenuItems *items)
 //@breif video preview UI 
 //@param visible preview 여부
 //@param img_item preview에 보여줄 이미지 아이템
-void DrawVideoView(bool visible, std::vector<PNGItem> v_frame_image)
+void DrawVideoView(bool visible, std::vector<ImageItem> v_frame_image)
 {
 	if (visible)
 	{
+		static int frame_rate = 33;
 		// FIXME :: tex_id는 preview 이미지가 변경될 때만 생성하면 된다.
 		// image item의 raw data로 gl texure id 생성
 		if (g_preview_video_idx >= v_frame_image.size())
@@ -235,76 +235,74 @@ void DrawVideoView(bool visible, std::vector<PNGItem> v_frame_image)
 			g_preview_video_idx = 0;
 		}
 		
-		PNGItem frame_item = v_frame_image[g_preview_video_idx++];
+		ImageItem frame_item = v_frame_image[g_preview_video_idx++];
 
-		GLuint tex_id = GetTextureId(frame_item.data, frame_item.width, frame_item.height, frame_item.Channels);
+		GLuint tex_id = GetTextureId(frame_item.data, frame_item.width, frame_item.height, frame_item.channels);
 		float img_width = frame_item.width;
 		float img_height = frame_item.height;
 
-		if (g_zoom_state)
+		// preview의 zoom 배율 변수
+		static float zoom_ratio = 1.0;
+		auto io = ImGui::GetIO();
+		float wheel_num = io.MouseWheel;
+
+		zoom_ratio += io.MouseWheel / IO_MOUSE_WHEEL_RATIO;
+
+		// 0.01 이하로는 스케일 다운되지 않음
+		if (zoom_ratio < UI_ZOOM_MIN)
 		{
-			auto io = ImGui::GetIO();
-			float wheel_num = io.MouseWheel;
-
-			g_zoom_ratio += io.MouseWheel / IO_MOUSE_WHEEL_RATIO;
-
-			// 0.01 이하로는 스케일 다운되지 않음
-			if (g_zoom_ratio < UI_ZOOM_MIN)
-			{
-				g_zoom_ratio = UI_ZOOM_MIN;
-			}
-			else if (g_zoom_ratio > UI_ZOOM_MAX)
-			{
-				g_zoom_ratio = UI_ZOOM_MAX;
-			}
+			zoom_ratio = UI_ZOOM_MIN;
+		}
+		else if (zoom_ratio > UI_ZOOM_MAX)
+		{
+			zoom_ratio = UI_ZOOM_MAX;
 		}
 
 		ImGui::Image(
 			(ImTextureID)(intptr_t)tex_id,
-			ImVec2(img_width / g_zoom_ratio, img_height / g_zoom_ratio),
+			ImVec2(img_width / zoom_ratio, img_height / zoom_ratio),
 			DRAW_DEFAULT_UV_MIN,
 			DRAW_DEFAULT_UV_MAX,
 			DRAW_DEFAULT_TINT,
 			DRAW_DEFAULT_BORDER
 		);
 
-		Sleep(33);
+		Sleep(frame_rate);	// frame rate 만큼 sleep
 	}
 }
 //@breif 병합 혹은 raw 변환된 이미지의 preview를 제공하기 위한 UI
 //@param visible preview 여부
 //@param img_item preview에 보여줄 이미지 아이템
-void DrawImageView(bool visible, PNGItem *img_item)
+void DrawImageView(bool visible, ImageItem *img_item)
 {
 	if (visible)
 	{
 		// FIXME :: tex_id는 preview 이미지가 변경될 때만 생성하면 된다.
 		// image item의 raw data로 gl texure id 생성
-		GLuint tex_id = GetTextureId(img_item->data, img_item->width, img_item->height, img_item->Channels);
+		GLuint tex_id = GetTextureId(img_item->data, img_item->width, img_item->height, img_item->channels);
 		float img_width = img_item->width;
 		float img_height = img_item->height;
-		
-		if (g_zoom_state)
+
+		// preview의 zoom 배율 변수
+		static float zoom_ratio = 1.0;
+		auto io = ImGui::GetIO();
+		float wheel_num = io.MouseWheel;
+
+		zoom_ratio += io.MouseWheel / IO_MOUSE_WHEEL_RATIO;
+
+		// 10배 줌으로 제한
+		if (zoom_ratio < UI_ZOOM_MIN)
 		{
-			auto io = ImGui::GetIO();
-			float wheel_num = io.MouseWheel;
-
-			g_zoom_ratio += io.MouseWheel / IO_MOUSE_WHEEL_RATIO;
-
-			// 0.01 이하로는 스케일 다운되지 않음
-			if (g_zoom_ratio < UI_ZOOM_MIN)
-			{
-				g_zoom_ratio = UI_ZOOM_MIN;
-			}
-			else if (g_zoom_ratio > UI_ZOOM_MAX)
-			{
-				g_zoom_ratio = UI_ZOOM_MAX;
-			}
+			zoom_ratio = UI_ZOOM_MIN;
+		}
+		else if (zoom_ratio >= UI_ZOOM_MAX)
+		{
+			zoom_ratio = UI_ZOOM_MAX;
 		}
 
 		ImGui::Image(
 			(ImTextureID)(intptr_t)tex_id,
-			ImVec2(img_width / g_zoom_ratio, img_height / g_zoom_ratio),
+			ImVec2(img_width / zoom_ratio, img_height / zoom_ratio),
 			DRAW_DEFAULT_UV_MIN,
 			DRAW_DEFAULT_UV_MAX,
 			DRAW_DEFAULT_TINT,
@@ -316,7 +314,7 @@ void DrawImageView(bool visible, PNGItem *img_item)
 //@breif 병합 혹은 raw 변환된 이미지의 preview를 제공하기 위한 UI
 //@param items 보여줄 preview view를 확인하기 위한 변수
 //@param view_item preview에 보여줄 이미지 아이템
-void DrawPreView(MenuItems *items, PNGItem *view_item)
+void DrawPreView(UIItems *items, ImageItem *view_item)
 {
 	static bool open = true;
 	static bool opened[kPreviewItemMax] = { true, true }; // Persistent user state
@@ -370,7 +368,7 @@ void DrawPreView(MenuItems *items, PNGItem *view_item)
 
 //@breif image list view로 선택된 이미지의 병합 혹은 raw 변환을 위한 UI
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
-std::string DrawImageListActionMenuBar(MenuItems *items)
+std::string DrawImageListActionMenuBar(UIItems *items)
 {
 	std::string ret = "";
 
@@ -406,7 +404,7 @@ std::string DrawImageListActionMenuBar(MenuItems *items)
 //@breif Files 메뉴에 해당하는 UI
 //@details  File Dialog로 선택된 이미지를 바로 병합/변환 하거나 이미지 리스트에 반영하기 위한 액션을 결정하기 위한 함수
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
-void DrawFilesMenuBar(MenuItems *items)
+void DrawFilesMenuBar(UIItems *items)
 {
 	// file dialog로부터 이미지를 오픈한 뒤 바로 이미지 병합 하기 위한 구문
 	if (ImGui::MenuItem("Open - Direct Merge"))
@@ -503,7 +501,7 @@ void DrawFilesMenuBar(MenuItems *items)
 
 //@breif MenuBar UI를 그리는 함수
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
-void DrawMenuBar(MenuItems *items)
+void DrawMenuBar(UIItems *items)
 {
 	if (ImGui::BeginMainMenuBar())
 	{

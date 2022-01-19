@@ -40,7 +40,7 @@
 #endif
 
 // menubar 옵션 관리를 위한 전역 변수
-static MenuItems g_menu_items;
+static UIItems g_menu_items;
 // FIXME :: 추후 설정을 통해 merge_num을 대체하는 str을 사용할 것
 // 병합된 이미지와 이미지 정보 파일을 위한 idx 값
 static int merge_num = 1;
@@ -65,7 +65,7 @@ static void glfw_error_callback(int error, const char* description)
 //@breif 이미지의 width 기준 내림차순 정렬 함수
 //@param a 정렬 비교 대상 a
 //@param b 정렬 비교 대상 b
-bool PNGItemWidthSort(const PNGItem& a, const PNGItem& b)
+bool ItemWidthSort(const ImageItem& a, const ImageItem& b)
 {
 	if (a.width > b.width)
 	{
@@ -80,7 +80,7 @@ bool PNGItemWidthSort(const PNGItem& a, const PNGItem& b)
 //@breif 이미지의 height 기준 내림차순 정렬 함수
 //@param a 정렬 비교 대상 a
 //@param b 정렬 비교 대상 b
-bool PNGItemHeightSort(const PNGItem& a, const PNGItem& b)
+bool ItemHeightSort(const ImageItem& a, const ImageItem& b)
 {
 	if (a.height > b.height)
 	{
@@ -111,25 +111,25 @@ ImVec4 Pixel2UV(ImVec2 tex_size, ImVec2 pos, ImVec2 size)
 }
 
 //@breif 병합될 이미지를 위한 기본 정보값을 초기화하는 함수
-//@details  병합할 이미지 리스트 ( v_png_item ) 정보를 읽어들여 생성할 텍스처에 대한 width, height, channel 값과
+//@details  병합할 이미지 리스트 ( v_img_item ) 정보를 읽어들여 생성할 텍스처에 대한 width, height, channel 값과
 // 병합될 이미지의 경로를 설정한다.
 // 병합될 이미지의 너비는 이미지 리스트 중 너비가 가장 큰 값으로, 높이는 정렬된 이미지들의 총 합으로 결정된다
-//@param v_png_item 병합에 사용될 이미지 리스트
+//@param v_img_item 병합에 사용될 이미지 리스트
 //@param merged_item 병합 결과 이미지
-void CreateMergedImageInfo(std::vector<PNGItem> v_png_item, PNGItem * merged_item)
+void CreateMergedImageInfo(std::vector<ImageItem> v_img_item, ImageItem * merged_item)
 {
 	//병합된 이미지를 저장할 경로 설정
 	merged_item->path = "merged_image_" + std::to_string(merge_num) + ".png";
 	//sort된 값이기에 항상 0번째 인덱스의 width가 최대값
-	merged_item->width = v_png_item[0].width;
+	merged_item->width = v_img_item[0].width;
 	merged_item->height = 0;
 	//내가 생성할 건 항상 알파값 포함된 이미지이므로 4channel로 설정
-	merged_item->Channels = 4;
+	merged_item->channels = 4;
 	int sum_item_width = 0;
 	int cur_step_max_height = 0;
 
 	// 이미지 리스트로부터 각각의 이미지를 호출
-	for (auto item : v_png_item)
+	for (auto item : v_img_item)
 	{
 		// 이미지 리스트 중 너비가 가장 큰 값을 구하기 위한 변수
 		int compare_sum = sum_item_width + item.width;
@@ -157,9 +157,9 @@ void CreateMergedImageInfo(std::vector<PNGItem> v_png_item, PNGItem * merged_ite
 
 //@breif 하나로 병합된 이미지와 병합된 이미지를 생성할 때 사용되는 이미지들의 좌표 정보를 저장하는 함수
 // 좌표 정보는 마진 값을 무시하고 순수한 이미지 좌표를 저장한다
-//@param v_png_item 병합에 사용될 이미지 리스트
+//@param v_img_item 병합에 사용될 이미지 리스트
 //@param merged_item 병합 결과 이미지
-void WriteMergedMarginImage(std::vector<PNGItem> v_png_item, PNGItem *merged_item)
+void WriteMergedMarginImage(std::vector<ImageItem> v_img_item, ImageItem *merged_item)
 {
 	int row_idx = 0;
 	int col_idx = 0;
@@ -178,11 +178,11 @@ void WriteMergedMarginImage(std::vector<PNGItem> v_png_item, PNGItem *merged_ite
 	}
 
 	// 병합될 이미지의 메모리 할당 및 초기화
-	merged_item->data = (unsigned char*)malloc(sizeof(unsigned char) * merged_item->width * merged_item->height * merged_item->Channels);
-	memset(merged_item->data, 0, merged_item->width * merged_item->height * merged_item->Channels);
+	merged_item->data = (unsigned char*)malloc(sizeof(unsigned char) * merged_item->width * merged_item->height * merged_item->channels);
+	memset(merged_item->data, 0, merged_item->width * merged_item->height * merged_item->channels);
 
 	// 이미지 리스트로부터 각각의 이미지를 호출
-	for (auto item : v_png_item)
+	for (auto item : v_img_item)
 	{
 		std::string item_pos_str;
 		std::string item_info_str;
@@ -208,14 +208,14 @@ void WriteMergedMarginImage(std::vector<PNGItem> v_png_item, PNGItem *merged_ite
 					// 이미지가 write될 column idx :: 새로운 행에 처음 쓰이므로 현재 이미지의 column idx 값을 그대로 가지게 됨
 					int merge_col_idx = col_idx + item_col_idx;
 
-					// item.Channels 값이나  merged_item->Channels 값이나 항상 4로 유지됨.
+					// item.channels 값이나  merged_item->channels 값이나 항상 4로 유지됨.
 					// 왜냐하면 투명한 배경을 가진 이미지로 만들어야하기 때문.
 					// 이를 위해 item의 원본 데이터가 3channel이라면 투명도 100%의 alpha 값을 미리 채워둠
 					// 구현하기 편하게 하기 위해 고정시킴
-					for (int channel_idx = 0; channel_idx < item.Channels; channel_idx++)
+					for (int channel_idx = 0; channel_idx < item.channels; channel_idx++)
 					{
-						merged_item->data[(merge_row_idx * merged_item->width * merged_item->Channels) + (merge_col_idx *  item.Channels) + channel_idx] =
-							item.data[(item_row_idx * item.width * item.Channels) + (item_col_idx * item.Channels) + channel_idx];
+						merged_item->data[(merge_row_idx * merged_item->width * merged_item->channels) + (merge_col_idx *  item.channels) + channel_idx] =
+							item.data[(item_row_idx * item.width * item.channels) + (item_col_idx * item.channels) + channel_idx];
 					}
 				}
 			}
@@ -247,10 +247,10 @@ void WriteMergedMarginImage(std::vector<PNGItem> v_png_item, PNGItem *merged_ite
 				{
 					int merge_col_idx = col_idx + item_col_idx;
 
-					for (int channel_idx = 0; channel_idx < item.Channels; channel_idx++)
+					for (int channel_idx = 0; channel_idx < item.channels; channel_idx++)
 					{
-						merged_item->data[(merge_row_idx * merged_item->width * merged_item->Channels) + (merge_col_idx *  item.Channels) + channel_idx] =
-						item.data[(item_row_idx * item.width * item.Channels) + (item_col_idx * item.Channels) + channel_idx];
+						merged_item->data[(merge_row_idx * merged_item->width * merged_item->channels) + (merge_col_idx *  item.channels) + channel_idx] =
+						item.data[(item_row_idx * item.width * item.channels) + (item_col_idx * item.channels) + channel_idx];
 					}
 				}
 			}
@@ -270,20 +270,20 @@ void WriteMergedMarginImage(std::vector<PNGItem> v_png_item, PNGItem *merged_ite
 		}
 	}
 	//병합된 이미지를 write
-	stbi_write_png(merged_item->path.c_str(), merged_item->width, merged_item->height, merged_item->Channels, merged_item->data, 0);
+	stbi_write_png(merged_item->path.c_str(), merged_item->width, merged_item->height, merged_item->channels, merged_item->data, 0);
 }
 
 
 // brief : 병합된 이미지를 생성하기 위한 함수
-// v_png_item : 병합에 사용될 이미지 리스트
+// v_img_item : 병합에 사용될 이미지 리스트
 // merged_item : 병합 결과 이미지
-void CreateMergedImage(std::vector<PNGItem> v_png_item, PNGItem *merged_item)
+void CreateMergedImage(std::vector<ImageItem> v_img_item, ImageItem *merged_item)
 {
-	std::sort(v_png_item.begin(), v_png_item.end(), PNGItemWidthSort);
-	std::sort(v_png_item.begin() + 1, v_png_item.end(), PNGItemHeightSort);
+	std::sort(v_img_item.begin(), v_img_item.end(), ItemWidthSort);
+	std::sort(v_img_item.begin() + 1, v_img_item.end(), ItemHeightSort);
 
-	CreateMergedImageInfo(v_png_item, merged_item);
-	WriteMergedMarginImage(v_png_item, merged_item);
+	CreateMergedImageInfo(v_img_item, merged_item);
+	WriteMergedMarginImage(v_img_item, merged_item);
 
 	merge_num++;
 }
@@ -292,7 +292,7 @@ void CreateMergedImage(std::vector<PNGItem> v_png_item, PNGItem *merged_item)
 //@param item margin 값을 적용할 이미지
 //@param margin 적용할 margin 값
 //@param margin_item margin 값이 적용된 이미지 결과물
-void CreateMarginImage(PNGItem item, int margin, PNGItem *margin_item)
+void CreateMarginImage(ImageItem item, int margin, ImageItem *margin_item)
 {
 	// item의 상-하에 margin 만큼 여백을 생성하기 위한 length
 	int row_max = item.height + (margin * 2);
@@ -306,7 +306,7 @@ void CreateMarginImage(PNGItem item, int margin, PNGItem *margin_item)
 	bool is_insert_row_margin = false;
 	// checked 24bit image
 	// 불투명한 이미지 ( ex : RGB ) 인지 확인
-	bool is_opaque = (item.Channels == 3) ? true : false;
+	bool is_opaque = (item.channels == 3) ? true : false;
 
 	// 새로 생성할 이미지 메모리 할당
 	if (margin_item->data == nullptr)
@@ -369,7 +369,7 @@ void CreateMarginImage(PNGItem item, int margin, PNGItem *margin_item)
 						else
 						{
 							margin_item->data[(row_idx * column_max * margin_channels) + (column_idx * margin_channels) + channel_idx]
-								= item.data[(org_row_idx * item.width * item.Channels) + (org_column_idx * item.Channels) + channel_idx];
+								= item.data[(org_row_idx * item.width * item.channels) + (org_column_idx * item.channels) + channel_idx];
 						}
 					}
 				}
@@ -385,14 +385,14 @@ void CreateMarginImage(PNGItem item, int margin, PNGItem *margin_item)
 	margin_item->path = path;
 	margin_item->width = column_max;
 	margin_item->height = row_max;
-	margin_item->Channels = margin_channels;
+	margin_item->channels = margin_channels;
 }
 
 //@breif 선택된 이미지들을 하나의 텍스처로 병합하기 위한 함수
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
 //@param merged_item  병합된 이미지 결과물
 //@param is_direct 이미지를 열자마자 병합할 것인지 ( true ), 이미지 리스트를 생성하여 원하는 이미지들로만 병합할 것인지 ( false ) 결정하는 변수
-void MergedPngImages(MenuItems *items, PNGItem *merged_item, bool is_direct)
+void MergedPngImages(UIItems *items, ImageItem *merged_item, bool is_direct)
 {
 	// direct mode라면 열기한 이미지 파일을 바로 병합 처리
 	if (is_direct)
@@ -400,34 +400,34 @@ void MergedPngImages(MenuItems *items, PNGItem *merged_item, bool is_direct)
 		// 열기한 이미지들의 리스트로부터 각각의 이미지 경로를 가져온다
 		for (auto png_path : items->v_open_png_path)
 		{
-			PNGItem input_png_item;
-			PNGItem margin_png_item;
+			ImageItem input_png_item;
+			ImageItem margin_png_item;
 
 			input_png_item.path = png_path;
 			// FIXME :: 추후 png외 다양한 타입 지원시 수정할 것
 			// stb library를 통해 이미지 데이터 추출
-			input_png_item.data = stbi_load(png_path.c_str(), &input_png_item.width, &input_png_item.height, &input_png_item.Channels, 0);
+			input_png_item.data = stbi_load(png_path.c_str(), &input_png_item.width, &input_png_item.height, &input_png_item.channels, 0);
 
 			// TODO :: 추후 여백 정보에 대해 설정 탭으로 조정할 것인지 생각해보자
 			// IMG_MARGIN_PIXEL 만큼 투명한 여백을 가지는 이미지 생성
 			CreateMarginImage(input_png_item, IMG_MARGIN_PIXEL, &margin_png_item);
-			items->v_png_item.push_back(margin_png_item);
+			items->v_img_item.push_back(margin_png_item);
 		}
 		// 병합된 이미지 결과물 생성
-		CreateMergedImage(items->v_png_item, merged_item);
+		CreateMergedImage(items->v_img_item, merged_item);
 	}
 	// image list view로부터 특정 이미지들을 선택하여 병합된 이미지를 생성할 경우
 	else
 	{
 		int cur_idx = 0;
-		std::vector<PNGItem> v_merge_item;
+		std::vector<ImageItem> v_merge_item;
 
-		for (auto item : items->v_png_item)
+		for (auto item : items->v_img_item)
 		{
 			// image list view로부터 선택된 이미지들만 조회
 			if (g_image_table_selected[cur_idx++])
 			{
-				PNGItem margin_png_item;
+				ImageItem margin_png_item;
 
 				// TODO :: 추후 여백 정보에 대해 설정 탭으로 조정할 것인지 생각해보자
 				// IMG_MARGIN_PIXEL 만큼 투명한 여백을 가지는 이미지 생성
@@ -447,12 +447,12 @@ void MergedPngImages(MenuItems *items, PNGItem *merged_item, bool is_direct)
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
 //@param item 변환된 이미지 결과물
 //@param is_direct 이미지를 열자마자 변환할 것인지 ( true ), 이미지 리스트를 생성하여 원하는 이미지들로만 변환할 것인지 ( false ) 결정하는 변수
-void RawConvertImages(MenuItems *items, PNGItem *item, bool is_direct)
+void RawConvertImages(UIItems *items, ImageItem *item, bool is_direct)
 {
 	// direct mode라면 열기한 이미지 파일을 바로 변환 처리
 	if (is_direct)
 	{
-		PNGItem tmp_item;
+		ImageItem tmp_item;
 
 		std::ofstream out_file;
 		std::string org_path = g_menu_items.open_raw_path;
@@ -466,9 +466,9 @@ void RawConvertImages(MenuItems *items, PNGItem *item, bool is_direct)
 
 		tmp_item.path = g_menu_items.open_raw_path;
 		// stb library로 이미지의 raw 데이터 추출
-		tmp_item.data = stbi_load(tmp_item.path.c_str(), &tmp_item.width, &tmp_item.height, &tmp_item.Channels, 0);
+		tmp_item.data = stbi_load(tmp_item.path.c_str(), &tmp_item.width, &tmp_item.height, &tmp_item.channels, 0);
 
-		out_file.write((char*)tmp_item.data, tmp_item.width * tmp_item.height * tmp_item.Channels);
+		out_file.write((char*)tmp_item.data, tmp_item.width * tmp_item.height * tmp_item.channels);
 		
 		// stbi_load 사용 시 일부 png 파일을 제대로 읽지 못하는 경우가 있음. 따라서 포맷을 한번 재정렬 해주기 위해
 		// CreateMarginImage를 호출하여 처리해줌.
@@ -480,15 +480,15 @@ void RawConvertImages(MenuItems *items, PNGItem *item, bool is_direct)
 	else
 	{
 		int cur_idx = 0;
-		std::vector<PNGItem> v_merge_item;
+		std::vector<ImageItem> v_merge_item;
 
 		for (int i = 0; i < items->v_open_png_path.size(); i++)
 		{
 			// image list view로부터 선택된 이미지들만 조회
 			if (g_image_table_selected[cur_idx])
 			{
-				PNGItem tmp_item;
-				PNGItem tmp_raw_item;
+				ImageItem tmp_item;
+				ImageItem tmp_raw_item;
 
 				std::ofstream out_file;
 				std::string item_path = items->v_open_png_path[cur_idx];
@@ -502,9 +502,9 @@ void RawConvertImages(MenuItems *items, PNGItem *item, bool is_direct)
 
 				tmp_item.path = g_menu_items.open_raw_path;
 				// stb library로 이미지의 raw 데이터 추출
-				tmp_item.data = stbi_load(item_path.c_str(), &tmp_item.width, &tmp_item.height, &tmp_item.Channels, 0);
+				tmp_item.data = stbi_load(item_path.c_str(), &tmp_item.width, &tmp_item.height, &tmp_item.channels, 0);
 
-				out_file.write((char*)tmp_item.data, tmp_item.width * tmp_item.height * tmp_item.Channels);
+				out_file.write((char*)tmp_item.data, tmp_item.width * tmp_item.height * tmp_item.channels);
 
 				CreateMarginImage(tmp_item, IMG_MARGIN_PIXEL, &tmp_raw_item);
 				v_merge_item.push_back(tmp_raw_item);
@@ -526,7 +526,7 @@ void RawConvertImages(MenuItems *items, PNGItem *item, bool is_direct)
 
 			out_file.open(out_path.c_str(), std::ios::out | std::ios::binary);
 
-			out_file.write((char*)item->data, item->width * item->height * item->Channels);
+			out_file.write((char*)item->data, item->width * item->height * item->channels);
 
 			out_file.close();
 		}
@@ -537,26 +537,26 @@ void RawConvertImages(MenuItems *items, PNGItem *item, bool is_direct)
 
 //@breif MenuBar를 통해 열기한 이미지파일들로부터 이미지 원본 데이터를 생성하는 함수
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
-void CreateImageItems(MenuItems *items)
+void CreateImageItems(UIItems *items)
 {
 	int image_idx = 0;
 
 	for (auto png_path : items->v_open_png_path)
 	{
-		if (items->v_png_item.size() > image_idx++)
+		if (items->v_img_item.size() > image_idx++)
 		{
 			continue;
 		}
-		PNGItem input_png_item;
-		PNGItem margin_png_item;
+		ImageItem input_png_item;
+		ImageItem margin_png_item;
 
 		input_png_item.path = png_path;
-		input_png_item.data = stbi_load(png_path.c_str(), &input_png_item.width, &input_png_item.height, &input_png_item.Channels, 0);
+		input_png_item.data = stbi_load(png_path.c_str(), &input_png_item.width, &input_png_item.height, &input_png_item.channels, 0);
 
 		// stbi_load 사용 시 일부 png 파일을 제대로 읽지 못하는 경우가 있음. 따라서 포맷을 한번 재정렬 해주기 위해
 		// CreateMarginImage를 호출하여 처리해줌.
 		CreateMarginImage(input_png_item, 0, &margin_png_item);
-		items->v_png_item.push_back(margin_png_item);
+		items->v_img_item.push_back(margin_png_item);
 	}
 }
 
@@ -619,7 +619,7 @@ int main(int, char**)
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-	static PNGItem view_item;
+	static ImageItem view_item;
 	
 	InitUIMember();
 
@@ -680,7 +680,7 @@ int main(int, char**)
 		// image list view를 그리는 함수
 		DrawImageListView(&g_menu_items);
 		// Settings view를 그리는 함수
-		DrawSettingsView(&g_menu_items);
+		DrawPropertyView(&g_menu_items);
 		// Rendering
 		ImGui::Render();
 		int display_w, display_h;
