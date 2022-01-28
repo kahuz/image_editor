@@ -425,7 +425,7 @@ void MergedPngImages(UIItems *items, ImageItem *merged_item, bool is_direct)
 		for (auto item : items->v_img_item)
 		{
 			// image list view로부터 선택된 이미지들만 조회
-			if (g_image_table_selected[cur_idx++])
+			if (g_image_table_visible[cur_idx++])
 			{
 				ImageItem margin_png_item;
 
@@ -485,7 +485,7 @@ void RawConvertImages(UIItems *items, ImageItem *item, bool is_direct)
 		for (int i = 0; i < items->v_open_png_path.size(); i++)
 		{
 			// image list view로부터 선택된 이미지들만 조회
-			if (g_image_table_selected[cur_idx])
+			if (g_image_table_visible[cur_idx])
 			{
 				ImageItem tmp_item;
 				ImageItem tmp_raw_item;

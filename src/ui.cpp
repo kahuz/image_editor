@@ -19,10 +19,10 @@ int g_preview_video_idx = 0;
 std::string g_modal_str;
 // 특정 액션에 따라 modal을 띄우기 위한 boolean 변수
 bool g_open_modal = false;
-// image view에 대한 zoom 활성화 여부 변수
-bool g_zoom_state = false;
-// image list view에서 선택된 image item을 관리하기 위한 bool array
-bool g_image_table_selected[UI_IMAGE_LIST_VIEW_ITEM_MAX];
+// image list view에서 visible이 활성화된 image item을 관리하기 위한 bool array
+bool g_image_table_visible[UI_IMAGE_LIST_VIEW_ITEM_MAX];
+//Image List View에서 선택된 아이템을 확인하기 위한 index value
+int g_selected_list_item = -1;
 
 //@breif UI help marker 함수
 // (?) 로 표신된다
@@ -39,7 +39,7 @@ static void HelpMarker(const char* desc)
 	}
 }
 
-// brief : rgb, rgba raw 데이터로 gl texture를 생성하는 함수
+//@brief : rgb, rgba raw 데이터로 gl texture를 생성하는 함수
 //@param img_data 이미지 raw 데이터
 //@param width 이미지 width
 //@param height 이미지 height
@@ -76,6 +76,32 @@ GLuint GetTextureId(const void *img_data, int width, int height, int channel)
 
 	return tex_id;
 }
+
+//@brief : 마우스가 위치한 ImGui Window Widget에서 특정 item을 선택했는지 확인하기 위한 함수
+bool IsClickItem(ImVec2 mouse_pos, ImVec2 item_area)
+{
+	bool ret = false;
+
+	if (mouse_pos.x > 0 && mouse_pos.x <= item_area.x && mouse_pos.y > 0 && mouse_pos.y <= item_area.y)
+	{
+		auto io = ImGui::GetIO();
+
+		int count = IM_ARRAYSIZE(io.MouseDown);
+
+		for (int i = 0; i < count; i++)
+		{
+			if (ImGui::IsMouseReleased(i))
+			{
+				ret = true;
+			}
+		}
+		return ret;
+	}
+	else
+	{
+		return false;
+	}
+}
 //@breif 현재 마우스가 위치한 ImGui Window widget에 releative한 위치를 반환하는 함수
 ImVec2 GetMousePosInCurrentView()
 {
@@ -83,8 +109,8 @@ ImVec2 GetMousePosInCurrentView()
 
 	auto io = ImGui::GetIO();
 
-	cur_mouse_pos.x = io.MousePos.x - ImGui::GetCursorScreenPos().x - ImGui::GetScrollX();
-	cur_mouse_pos.y = io.MousePos.y - ImGui::GetCursorScreenPos().y - ImGui::GetScrollY();
+	cur_mouse_pos.x = io.MousePos.x - ImGui::GetCursorScreenPos().x;
+	cur_mouse_pos.y = io.MousePos.y - ImGui::GetCursorScreenPos().y;
 
 	return cur_mouse_pos;
 }
@@ -104,7 +130,18 @@ void DrawPropertyView(UIItems *items)
 
 	ImGui::Begin(UI_PROPERTY_VIEW_TITLE, &open);
 	{
+		if (g_selected_list_item >= 0)
+		{
+			auto property_item = items->v_img_item.at(g_selected_list_item);
+			std::string item_name_str = "Item name : " + property_item.path;
+			std::string item_size_str = "Width : " + std::to_string(property_item.width) + "\tHeight : " + std::to_string(property_item.height);
+			std::string item_format_str = "Image Format : ";
+			item_format_str.append(image_format_str[property_item.img_format]);
 
+			ImGui::Text(item_name_str.c_str());
+			ImGui::Text(item_size_str.c_str());
+			ImGui::Text(item_format_str.c_str());
+		}
 	}
 	ImGui::PopStyleVar();
 	ImGui::End();
@@ -129,8 +166,6 @@ void DrawImageListView(UIItems *items)
 		// image, name, visible로 구성됨
 		static int image_table_columns = 3;
 
-		ImVec2 mouse_pos = GetMousePosInCurrentView();
-
 		// image list를 표현하기 위한 table ui
 		if (ImGui::BeginTable("Image Tables", image_table_columns, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings))
 		{
@@ -147,21 +182,40 @@ void DrawImageListView(UIItems *items)
 			for (auto item : items->v_img_item)
 			{
 				float table_column_size = UI_IMAGE_LIST_VIEW_SIZE_W / image_table_columns;
+				//image list에 보여줄 tabe item의 이미지에 대해 image list 크기에 따라 비율을 결정하기 위한 부분
 				float image_ratio = item.width > item.height ? item.width / table_column_size : item.height / table_column_size;
 
 				// Image 에 해당되는 UI
 				ImGui::TableNextColumn();
 				{
-					if (g_image_table_selected[cur_idx])
+					ImVec2 mouse_pos = GetMousePosInCurrentView();
+
+					if (g_image_table_visible[cur_idx])
 					{
 						GLuint tex_id = GetTextureId(item.data, item.width, item.height, item.channels);
+						ImVec2 item_area(item.width / image_ratio, item.height / image_ratio);
+						//table item를 선택하였다면 select tint를 아니라면 default tint
+						ImVec4 image_tint = g_selected_list_item == cur_idx ? DRAW_SELECT_TINT : DRAW_DEFAULT_TINT;
+
+						if (IsClickItem(mouse_pos, item_area))
+						{
+							if (g_selected_list_item == cur_idx)
+							{
+								g_selected_list_item = -1;
+							}
+							else
+							{
+								image_tint = DRAW_SELECT_TINT;
+								g_selected_list_item = cur_idx;
+							}
+						}
 
 						ImGui::Image(
 							(ImTextureID)(intptr_t)tex_id,
-							ImVec2(item.width / image_ratio, item.height / image_ratio),
+							item_area,
 							DRAW_DEFAULT_UV_MIN,
 							DRAW_DEFAULT_UV_MAX,
-							DRAW_DEFAULT_TINT,
+							image_tint,
 							DRAW_DEFAULT_BORDER
 						);
 					}
@@ -186,10 +240,10 @@ void DrawImageListView(UIItems *items)
 					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + UI_IMAGE_LIST_VIEW_SIZE_W / image_table_columns / 3);
 					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + item.height / image_ratio / 3);
 
-					// visible 여부를 g_image_table_selected에 저장/관리
-					ImGui::Checkbox(check_item_id.c_str(), &g_image_table_selected[cur_idx]);
+					// visible 여부를 g_image_table_visible에 저장/관리
+					ImGui::Checkbox(check_item_id.c_str(), &g_image_table_visible[cur_idx]);
 
-					if (g_image_table_selected[cur_idx])
+					if (g_image_table_visible[cur_idx])
 					{
 						active_item_num++;
 					}
@@ -556,7 +610,7 @@ void InitUIMember()
 {
 	for (int i = 0; i < UI_IMAGE_LIST_VIEW_ITEM_MAX; i++)
 	{
-		g_image_table_selected[i] = true;
+		g_image_table_visible[i] = true;
 	}
 	setlocale(LC_ALL, "");
 }

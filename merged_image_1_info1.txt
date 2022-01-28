@@ -1,3 +1,3 @@
-outline_favorite_black_24dp.png [ 8, 8, 48, 48 ]
-outline_manage_accounts_black_24dp.png [ 8, 72, 48, 48 ]
-outline_settings_black_24dp.png [ 8, 136, 48, 48 ]
+ball.png [ 8, 8, 1158, 1156 ]
+box.png [ 8, 1180, 512, 512 ]
+mimic.png [ 8, 1708, 750, 488 ]

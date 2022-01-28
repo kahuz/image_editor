@@ -19,6 +19,7 @@
 #define DRAW_DEFAULT_UV_MIN		ImVec2(0.0f, 0.0f)
 #define DRAW_DEFAULT_UV_MAX		ImVec2(1.0f, 1.0f)
 #define DRAW_DEFAULT_TINT		ImVec4(1.0f, 1.0f, 1.0f, 1.0f)
+#define DRAW_SELECT_TINT		ImVec4(1.0f, 1.0f, 0.5f, 0.2f)
 #define DRAW_DEFAULT_BORDER		ImVec4(1.0f, 1.0f, 1.0f, 0.0f)
 
 #define UI_WINDOW_SIZE_W		1280.0f
@@ -101,5 +102,5 @@ void DrawFilesMenuBar(UIItems *items);
 
 void InitUIMember();
 
-extern bool g_image_table_selected[UI_IMAGE_LIST_VIEW_ITEM_MAX];
+extern bool g_image_table_visible[UI_IMAGE_LIST_VIEW_ITEM_MAX];
 #endif //#ifndef __UI_H__
