@@ -8,8 +8,10 @@ enum _ImageFormat {
 	kRGBA,
 	kBGR,
 	kBGRA,
-	kYUV420,
-	kYUV422,
+	kYUV420P,
+	kYVU420P, 
+	kYUV422P,
+	kYVU422P,
 	kFormatMax
 }typedef ImageFormat;
 

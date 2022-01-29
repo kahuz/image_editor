@@ -398,19 +398,19 @@ void MergedPngImages(UIItems *items, ImageItem *merged_item, bool is_direct)
 	if (is_direct)
 	{
 		// 열기한 이미지들의 리스트로부터 각각의 이미지 경로를 가져온다
-		for (auto png_path : items->v_open_png_path)
+		for (auto img_path : items->v_open_img_path)
 		{
-			ImageItem input_png_item;
+			ImageItem input_img_item;
 			ImageItem margin_png_item;
 
-			input_png_item.path = png_path;
+			input_img_item.path = img_path;
 			// FIXME :: 추후 png외 다양한 타입 지원시 수정할 것
 			// stb library를 통해 이미지 데이터 추출
-			input_png_item.data = stbi_load(png_path.c_str(), &input_png_item.width, &input_png_item.height, &input_png_item.channels, 0);
+			input_img_item.data = stbi_load(img_path.c_str(), &input_img_item.width, &input_img_item.height, &input_img_item.channels, 0);
 
 			// TODO :: 추후 여백 정보에 대해 설정 탭으로 조정할 것인지 생각해보자
 			// IMG_MARGIN_PIXEL 만큼 투명한 여백을 가지는 이미지 생성
-			CreateMarginImage(input_png_item, IMG_MARGIN_PIXEL, &margin_png_item);
+			CreateMarginImage(input_img_item, IMG_MARGIN_PIXEL, &margin_png_item);
 			items->v_img_item.push_back(margin_png_item);
 		}
 		// 병합된 이미지 결과물 생성
@@ -482,7 +482,7 @@ void RawConvertImages(UIItems *items, ImageItem *item, bool is_direct)
 		int cur_idx = 0;
 		std::vector<ImageItem> v_merge_item;
 
-		for (int i = 0; i < items->v_open_png_path.size(); i++)
+		for (int i = 0; i < items->v_open_img_path.size(); i++)
 		{
 			// image list view로부터 선택된 이미지들만 조회
 			if (g_image_table_visible[cur_idx])
@@ -491,7 +491,7 @@ void RawConvertImages(UIItems *items, ImageItem *item, bool is_direct)
 				ImageItem tmp_raw_item;
 
 				std::ofstream out_file;
-				std::string item_path = items->v_open_png_path[cur_idx];
+				std::string item_path = items->v_open_img_path[cur_idx];
 				size_t str_first_idx = item_path.rfind(SEPARATE_STR);
 
 				std::string out_path = item_path.substr(str_first_idx + SEPARATE_STR_LENGTH, item_path.length());
@@ -535,27 +535,94 @@ void RawConvertImages(UIItems *items, ImageItem *item, bool is_direct)
 	g_menu_items.active_list_raw_convert = false;
 }
 
-//@breif MenuBar를 통해 열기한 이미지파일들로부터 이미지 원본 데이터를 생성하는 함수
+//@brief yvu420p image data를 rgb data로 변환하는 함수
+//@param src_item 변환하기 위한 yvu420 data 정보를 담은 item
+//@param dst_item 변환된 데이터가 저장될 item
+void YVU420PToRGB(ImageItem src_item, ImageItem dst_item)
+{
+
+}
+
+//@brief yvu422p image data를 rgb data로 변환하는 함수
+//@param src_item 변환하기 위한 yvu422 data 정보를 담은 item
+//@param dst_item 변환된 데이터가 저장될 item
+void YVU422PToRGB(ImageItem src_item, ImageItem dst_item)
+{
+
+}
+
+//@brief yuv420p image data를 rgb data로 변환하는 함수
+//@param src_item 변환하기 위한 yuv420 data 정보를 담은 item
+//@param dst_item 변환된 데이터가 저장될 item
+void YUV420PToRGB(ImageItem src_item, ImageItem dst_item)
+{
+
+}
+
+//@brief yuv422p image data를 rgb data로 변환하는 함수
+//@param src_item 변환하기 위한 yuv422 data 정보를 담은 item
+//@param dst_item 변환된 데이터가 저장될 item
+void YUV422PToRGB(ImageItem src_item, ImageItem dst_item)
+{
+
+}
+
+//@brief raw image data를 rgb data로 변환하는 함수
+//@param src_item 변환하기 위한 raw data 정보를 담은 item
+//@param dst_item 변환된 데이터가 저장될 item
+void RawToRGB(ImageItem src_item, ImageItem dst_item)
+{
+	switch (src_item.img_format)
+	{
+	case kYUV420P:
+		YUV420PToRGB(src_item, dst_item);
+		break;
+	case kYUV422P:
+		YUV422PToRGB(src_item, dst_item);
+		break;
+	case kYVU420P:
+		YVU420PToRGB(src_item, dst_item);
+		break;
+	case kYVU422P:
+		YVU422PToRGB(src_item, dst_item);
+		break;
+	default:
+		break;
+	}
+}
+//@brief MenuBar를 통해 열기한 이미지파일들로부터 이미지 원본 데이터를 생성하는 함수
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
-void CreateImageItems(UIItems *items)
+void CreateImageItems(UIItems *items, bool is_raw)
 {
 	int image_idx = 0;
 
-	for (auto png_path : items->v_open_png_path)
+	for (auto img_path : items->v_open_img_path)
 	{
 		if (items->v_img_item.size() > image_idx++)
 		{
 			continue;
 		}
-		ImageItem input_png_item;
+
+		ImageItem input_img_item;
 		ImageItem margin_png_item;
 
-		input_png_item.path = png_path;
-		input_png_item.data = stbi_load(png_path.c_str(), &input_png_item.width, &input_png_item.height, &input_png_item.channels, 0);
+		input_img_item.path = img_path;
 
-		// stbi_load 사용 시 일부 png 파일을 제대로 읽지 못하는 경우가 있음. 따라서 포맷을 한번 재정렬 해주기 위해
-		// CreateMarginImage를 호출하여 처리해줌.
-		CreateMarginImage(input_png_item, 0, &margin_png_item);
+		if (is_raw)
+		{
+
+		}
+		else
+		{
+			input_img_item.data = stbi_load(img_path.c_str(), &input_img_item.width, &input_img_item.height, &input_img_item.channels, 0);
+
+			// stbi_load 사용 시 일부 png 파일을 제대로 읽지 못하는 경우가 있음. 따라서 포맷을 한번 재정렬 해주기 위해
+			// CreateMarginImage를 호출하여 처리해줌.
+			CreateMarginImage(input_img_item, 0, &margin_png_item);
+
+			margin_png_item.img_format = input_img_item.channels == 3 ? ImageFormat::kRGB : ImageFormat::kRGBA;
+		}
+
 		items->v_img_item.push_back(margin_png_item);
 	}
 }
@@ -645,10 +712,11 @@ int main(int, char**)
 			g_menu_items.active_preview_image = true;
 		}
 		// 이미지 파일을 open하여 image list view에 반영
-		else if (g_menu_items.is_open_png_files)
+		else if (g_menu_items.is_open_files)
 		{
-			CreateImageItems(&g_menu_items);
-			g_menu_items.is_open_png_files = false;
+			CreateImageItems(&g_menu_items, g_menu_items.is_open_raw_file);
+
+			g_menu_items.is_open_files = false;
 		}
 		// image list view에서 특정 이미지들을 visible하고 merge할 경우 처리하는 구문
 		else if (g_menu_items.active_list_merge)

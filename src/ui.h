@@ -71,7 +71,7 @@ enum PREVIEW_TAB_ITEMS {
 };
 
 struct _UIItems {
-	std::vector<std::string> v_open_png_path;
+	std::vector<std::string> v_open_img_path;
 	std::vector<ImageItem> v_img_item;
 	std::vector<ImageItem> v_raw_item;
 	std::string open_raw_path;
@@ -85,7 +85,9 @@ struct _UIItems {
 
 	bool exist_active_list_item = false;
 
-	bool is_open_png_files = false;
+	bool is_open_files = false;
+	bool is_open_raw_file = false;
+
 	bool is_make_raw = false;
 	bool is_make_merge = false;
 

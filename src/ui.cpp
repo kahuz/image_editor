@@ -17,8 +17,6 @@
 int g_preview_video_idx = 0;
 // modal에 표시될 string 변수
 std::string g_modal_str;
-// 특정 액션에 따라 modal을 띄우기 위한 boolean 변수
-bool g_open_modal = false;
 // image list view에서 visible이 활성화된 image item을 관리하기 위한 bool array
 bool g_image_table_visible[UI_IMAGE_LIST_VIEW_ITEM_MAX];
 //Image List View에서 선택된 아이템을 확인하기 위한 index value
@@ -455,6 +453,60 @@ std::string DrawImageListActionMenuBar(UIItems *items)
 	return ret;
 }
 
+bool DrawRawPropertyView(UIItems *items, int raw_file_idx)
+{
+	bool is_open = true;
+	ImGui::OpenPopup("RawPropertyView");
+
+	// Always center this window when appearing
+	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	ImGui::SetNextWindowSize(ImVec2(300.0f, 110.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI_VIEW_DEFALUT_ROUND);
+	
+	if (ImGui::BeginPopupModal("RawPropertyView", &is_open, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		if (raw_file_idx >= items->v_raw_item.size())
+		{
+			ImageItem raw_item;
+
+			std::string item_path = items->v_open_img_path.at(raw_file_idx);
+			// 현재 이미지를 open 한 정체 경로에서 파일 이름만 긁어옴
+			size_t str_first_idx = item_path.rfind(SEPARATE_STR);
+			std::string raw_name_str = item_path.substr(str_first_idx + SEPARATE_STR_LENGTH, item_path.length());
+
+			raw_item.path = raw_name_str;
+
+			items->v_raw_item.push_back(raw_item);
+		}
+
+		ImageItem cur_raw_item = items->v_raw_item.at(raw_file_idx);
+
+		std::string item_name_str = "Item name : " + cur_raw_item.path;
+		std::string item_size_str = "Width : " + std::to_string(cur_raw_item.width) + "\tHeight : " + std::to_string(cur_raw_item.height);
+		std::string item_format_str = "Image Format : ";
+		item_format_str.append(image_format_str[cur_raw_item.img_format]);
+
+//		ImGui::InputText("UTF-8 input", width_buf, tmp_width_str.size());
+
+
+		ImGui::Text(item_name_str.c_str());
+		ImGui::Text(item_size_str.c_str());
+		ImGui::Text(item_format_str.c_str());
+		// hard coding. center alinment for button
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 360.0f / 3);
+
+		if (ImGui::Button("Okay"))
+		{
+			is_open = false;
+		}
+		ImGui::EndPopup();
+	}
+	
+	ImGui::PopStyleVar();
+
+	return is_open;
+}
 //@breif Files 메뉴에 해당하는 UI
 //@details  File Dialog로 선택된 이미지를 바로 병합/변환 하거나 이미지 리스트에 반영하기 위한 액션을 결정하기 위한 함수
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
@@ -473,7 +525,7 @@ void DrawFilesMenuBar(UIItems *items)
 			for (i = 0; i < NFD_PathSet_GetCount(&outPath); ++i)
 			{
 				std::string item_path = (char *)NFD_PathSet_GetPath(&outPath, i);
-				items->v_open_png_path.push_back(item_path);
+				items->v_open_img_path.push_back(item_path);
 
 				Log("Open File path : %s", item_path.c_str());
 			}
@@ -518,11 +570,11 @@ void DrawFilesMenuBar(UIItems *items)
 			Log("Error: %s", NFD_GetError());
 		}
 	}
-	// file dialog로부터 이미지를 오픈하여 iamge list view에 반영할 수 있게 하기 위한 구문
+	// file dialog로부터 이미지를 오픈하여 image list view에 반영할 수 있게 하기 위한 구문
 	if (ImGui::MenuItem("Open Images"))
 	{
 		nfdpathset_t outPath;
-		nfdresult_t result = NFD_OpenDialogMultiple("png", NULL, &outPath);
+		nfdresult_t result = NFD_OpenDialogMultiple("png,jpg,bmp;raw", NULL, &outPath);
 
 		if (result == NFD_OKAY)
 		{
@@ -531,22 +583,31 @@ void DrawFilesMenuBar(UIItems *items)
 			for (i = 0; i < NFD_PathSet_GetCount(&outPath); ++i)
 			{
 				std::string item_path = (char *)NFD_PathSet_GetPath(&outPath, i);
-				items->v_open_png_path.push_back(item_path);
+				items->v_open_img_path.push_back(item_path);
 
 				Log("Open File path : %s", item_path.c_str());
 			}
 
-			items->is_open_png_files = true;
+			std::string raw_check_path = (char *)NFD_PathSet_GetPath(&outPath, 0);
+			// 확장자만 긁어옴
+			std::string ext_str = raw_check_path.substr(raw_check_path.length() - FILE_EXTENSION_LENGTH, FILE_EXTENSION_LENGTH);
+			// raw 확장자인지 확인
+			if (ext_str.compare(".raw") == 0)
+			{
+				items->is_open_raw_file = true;
+			}
+
+			items->is_open_files = true;
 
 			NFD_PathSet_Free(&outPath);
 		}
 		else if (result == NFD_CANCEL)
 		{
-			items->is_open_png_files = false;
+			items->is_open_files = false;
 		}
 		else
 		{
-			items->is_open_png_files = false;
+			items->is_open_files = false;
 
 			Log("Error: %s", NFD_GetError());
 		}
@@ -557,6 +618,9 @@ void DrawFilesMenuBar(UIItems *items)
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
 void DrawMenuBar(UIItems *items)
 {
+	// 특정 액션에 따라 modal을 띄우기 위한 boolean 변수
+	static bool open_modal = false;
+
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("[ Files ]"))
@@ -571,7 +635,7 @@ void DrawMenuBar(UIItems *items)
 
 			if (g_modal_str != "")
 			{
-				g_open_modal = true;
+				open_modal = true;
 			}
 			ImGui::EndMenu();
 		}
@@ -579,7 +643,24 @@ void DrawMenuBar(UIItems *items)
 		ImGui::EndMainMenuBar();
 	}
 
-	if (g_open_modal)
+	if (items->is_open_raw_file)
+	{
+		static int raw_file_idx = 0;
+
+		if (raw_file_idx < items->v_open_img_path.size())
+		{
+			if (DrawRawPropertyView(items, raw_file_idx) == false)
+			{
+				raw_file_idx++;
+			}
+		}
+		else
+		{
+			items->is_open_raw_file = false;
+		}
+	}
+
+	if (open_modal)
 	{
 		ImGui::OpenPopup("Warning");
 
@@ -587,6 +668,7 @@ void DrawMenuBar(UIItems *items)
 		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 		ImGui::SetNextWindowSize(ImVec2(300.0f, 110.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI_VIEW_DEFALUT_ROUND);
 
 		if (ImGui::BeginPopupModal("Warning", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{
@@ -598,10 +680,11 @@ void DrawMenuBar(UIItems *items)
 
 			if (ImGui::Button("Okay"))
 			{
-				g_open_modal = false;
+				open_modal = false;
 			}
 			ImGui::EndPopup();
 		}
+		ImGui::PopStyleVar();
 	}
 }
 
