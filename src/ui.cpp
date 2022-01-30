@@ -456,15 +456,15 @@ std::string DrawImageListActionMenuBar(UIItems *items)
 bool DrawRawPropertyView(UIItems *items, int raw_file_idx)
 {
 	bool is_open = true;
-	ImGui::OpenPopup("RawPropertyView");
+	ImGui::OpenPopup(UI_RAW_PROPERTY_POPUP_TITLE);
 
 	// Always center this window when appearing
 	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(300.0f, 110.0f));
+	ImGui::SetNextWindowSize(ImVec2(UI_RAW_PROPERTY_POPUP_SIZE_W, UI_RAW_PROPERTY_POPUP_SIZE_H));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI_VIEW_DEFALUT_ROUND);
 	
-	if (ImGui::BeginPopupModal("RawPropertyView", &is_open, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal(UI_RAW_PROPERTY_POPUP_TITLE, &is_open, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		if (raw_file_idx >= items->v_raw_item.size())
 		{
@@ -483,21 +483,21 @@ bool DrawRawPropertyView(UIItems *items, int raw_file_idx)
 		ImageItem cur_raw_item = items->v_raw_item.at(raw_file_idx);
 
 		std::string item_name_str = "Item name : " + cur_raw_item.path;
-		std::string item_size_str = "Width : " + std::to_string(cur_raw_item.width) + "\tHeight : " + std::to_string(cur_raw_item.height);
-		std::string item_format_str = "Image Format : ";
-		item_format_str.append(image_format_str[cur_raw_item.img_format]);
 
-//		ImGui::InputText("UTF-8 input", width_buf, tmp_width_str.size());
-
+		static int select_format_idx = -1;
 
 		ImGui::Text(item_name_str.c_str());
-		ImGui::Text(item_size_str.c_str());
-		ImGui::Text(item_format_str.c_str());
+		ImGui::Text("Width          ");	ImGui::SameLine();		ImGui::SetNextItemWidth(150); static char width_text_buf[20] = ""; ImGui::InputText("##Width Text Input", width_text_buf, 20, ImGuiInputTextFlags_CharsDecimal);
+		ImGui::Text("Height         ");	ImGui::SameLine();		ImGui::SetNextItemWidth(150); static char height_text_buf[20] = ""; ImGui::InputText("##Height Text Input", height_text_buf, 20, ImGuiInputTextFlags_CharsDecimal);
+		ImGui::Text("Image Format   ");	ImGui::SameLine();		ImGui::SetNextItemWidth(150); ImGui::Combo("##Image Format Combo", &select_format_idx, image_format_str, kFormatMax);
 		// hard coding. center alinment for button
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 360.0f / 3);
 
-		if (ImGui::Button("Okay"))
+		if (ImGui::Button("Setting"))
 		{
+			items->v_raw_item.at(raw_file_idx).width = atoi(width_text_buf);
+			items->v_raw_item.at(raw_file_idx).height = atoi(height_text_buf);
+			items->v_raw_item.at(raw_file_idx).img_format = static_cast<_ImageFormat>(select_format_idx);
 			is_open = false;
 		}
 		ImGui::EndPopup();

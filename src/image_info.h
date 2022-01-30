@@ -9,8 +9,8 @@ enum _ImageFormat {
 	kBGR,
 	kBGRA,
 	kYUV420P,
-	kYVU420P, 
 	kYUV422P,
+	kYVU420P,
 	kYVU422P,
 	kFormatMax
 }typedef ImageFormat;
@@ -21,8 +21,10 @@ static const char* image_format_str[kFormatMax] = {
 	"RGBA",
 	"BGR",
 	"BGRA",
-	"YUV420",
-	"YUV422"
+	"YUV420P",
+	"YUU422P",
+	"YVU420P",
+	"YVU422P"
 };
 
 #endif //#ifndef __IMAGE_INFO_H__
