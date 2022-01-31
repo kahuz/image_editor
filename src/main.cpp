@@ -386,6 +386,7 @@ void CreateMarginImage(ImageItem item, int margin, ImageItem *margin_item)
 	margin_item->width = column_max;
 	margin_item->height = row_max;
 	margin_item->channels = margin_channels;
+	margin_item->img_format = margin_channels == 3 ? _ImageFormat::kRGB : _ImageFormat::kRGBA;
 }
 
 //@breif 선택된 이미지들을 하나의 텍스처로 병합하기 위한 함수
@@ -400,18 +401,18 @@ void MergedPngImages(UIItems *items, ImageItem *merged_item, bool is_direct)
 		// 열기한 이미지들의 리스트로부터 각각의 이미지 경로를 가져온다
 		for (auto img_path : items->v_open_img_path)
 		{
-			ImageItem input_img_item;
-			ImageItem margin_png_item;
+			ImageItem src_img_item;
+			ImageItem dst_png_item;
 
-			input_img_item.path = img_path;
+			src_img_item.path = img_path;
 			// FIXME :: 추후 png외 다양한 타입 지원시 수정할 것
 			// stb library를 통해 이미지 데이터 추출
-			input_img_item.data = stbi_load(img_path.c_str(), &input_img_item.width, &input_img_item.height, &input_img_item.channels, 0);
+			src_img_item.data = stbi_load(img_path.c_str(), &src_img_item.width, &src_img_item.height, &src_img_item.channels, 0);
 
 			// TODO :: 추후 여백 정보에 대해 설정 탭으로 조정할 것인지 생각해보자
 			// IMG_MARGIN_PIXEL 만큼 투명한 여백을 가지는 이미지 생성
-			CreateMarginImage(input_img_item, IMG_MARGIN_PIXEL, &margin_png_item);
-			items->v_img_item.push_back(margin_png_item);
+			CreateMarginImage(src_img_item, IMG_MARGIN_PIXEL, &dst_png_item);
+			items->v_img_item.push_back(dst_png_item);
 		}
 		// 병합된 이미지 결과물 생성
 		CreateMergedImage(items->v_img_item, merged_item);
@@ -427,17 +428,16 @@ void MergedPngImages(UIItems *items, ImageItem *merged_item, bool is_direct)
 			// image list view로부터 선택된 이미지들만 조회
 			if (g_image_table_visible[cur_idx++])
 			{
-				ImageItem margin_png_item;
+				ImageItem dst_png_item;
 
 				// TODO :: 추후 여백 정보에 대해 설정 탭으로 조정할 것인지 생각해보자
 				// IMG_MARGIN_PIXEL 만큼 투명한 여백을 가지는 이미지 생성
-				CreateMarginImage(item, IMG_MARGIN_PIXEL, &margin_png_item);
+				CreateMarginImage(item, IMG_MARGIN_PIXEL, &dst_png_item);
 
 				// 병합할 이미지 리스트에 여백 이미지 추가
-				v_merge_item.push_back(margin_png_item);
+				v_merge_item.push_back(dst_png_item);
 			}
 		}
-
 		// 병합된 이미지 생성
 		CreateMergedImage(v_merge_item, merged_item);
 	}
@@ -537,7 +537,6 @@ void RawConvertImages(UIItems *items, ImageItem *item, bool is_direct)
 
 //@brief yvu420p image data를 rgb data로 변환하는 함수
 //@param src_item 변환하기 위한 yvu420 data 정보를 담은 item
-//@param dst_item 변환된 데이터가 저장될 item
 void YVU420PToRGB(ImageItem src_item, ImageItem dst_item)
 {
 
@@ -545,15 +544,74 @@ void YVU420PToRGB(ImageItem src_item, ImageItem dst_item)
 
 //@brief yvu422p image data를 rgb data로 변환하는 함수
 //@param src_item 변환하기 위한 yvu422 data 정보를 담은 item
-//@param dst_item 변환된 데이터가 저장될 item
 void YVU422PToRGB(ImageItem src_item, ImageItem dst_item)
 {
+	// allocation image channel
+	unsigned char *Y_Channel, *Cb_Channel, *Cr_Channel, *Cb_up_Channel, *Cr_up_Channel;
 
+	Y_Channel = new unsigned char[src_item.width * src_item.height];		// file read
+	memcpy(Y_Channel, src_item.data, src_item.width * src_item.height);
+
+	Cb_Channel = new unsigned char[src_item.width * src_item.height / 2];	// file read
+	memcpy(Cb_Channel, &src_item.data[src_item.width * src_item.height], src_item.width * src_item.height / 2);
+
+	Cr_Channel = new unsigned char[src_item.width * src_item.height / 2];	// file read
+	memcpy(Cr_Channel, &src_item.data[src_item.width * src_item.height * 3 / 2], src_item.width * src_item.height / 2);
+
+	Cb_up_Channel = new unsigned char[src_item.width * src_item.height];	// Cb channel Up-sampling
+	Cr_up_Channel = new unsigned char[src_item.width * src_item.height];	// Cr channel Up-sampling
+
+	for (int r_idx = 0; r_idx < src_item.height; r_idx++)								// CbCr 채널 Up-sampling
+	{
+		for (int c_idx = 0, cbcr_up_idx = 0; c_idx < src_item.width / 2; cbcr_up_idx = cbcr_up_idx + 2, c_idx++)
+		{
+			Cb_up_Channel[(r_idx * src_item.width) + cbcr_up_idx] = Cb_Channel[(r_idx * src_item.width / 2) + c_idx];
+			Cb_up_Channel[(r_idx * src_item.width) + cbcr_up_idx + 1] = Cb_Channel[(r_idx * src_item.width / 2) + c_idx];
+
+			Cr_up_Channel[(r_idx * src_item.width) + cbcr_up_idx] = Cr_Channel[(r_idx * src_item.width / 2) + c_idx];
+			Cr_up_Channel[(r_idx * src_item.width) + cbcr_up_idx + 1] = Cr_Channel[(r_idx * src_item.width / 2) + c_idx];
+		}
+	}
+
+	dst_item.data = new unsigned char[src_item.width * src_item.height * 3];
+
+	// YUV422 to RGB
+	for (int r_idx = 0; r_idx < src_item.height; r_idx++)
+	{
+		for (int c_idx = 0; c_idx < src_item.width; c_idx++)
+		{
+			unsigned char Y_Value = Y_Channel[(r_idx * src_item.width) + c_idx];
+			//YUV
+			//unsigned char Cb_Value = Cb_up_Channel[(r_idx * src_item.width) + c_idx];
+			//unsigned char Cr_Value = Cr_up_Channel[(r_idx * src_item.width) + c_idx];
+			//YVU
+			unsigned char Cb_Value = Cr_up_Channel[(r_idx * src_item.width) + c_idx];
+			unsigned char Cr_Value = Cb_up_Channel[(r_idx * src_item.width) + c_idx];
+
+			switch (src_item.img_color_type)
+			{
+			case _ImageColorType::kITU_R_BT470:
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.13983 * (Cb_Value - 128));
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.39465 * (Cb_Value - 128) - 0.58060 * (Cr_Value - 128));
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.0321 * (Cb_Value - 128));
+				break;
+			case _ImageColorType::kITU_R_BT601:
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP( Y_Value + 1.402 * (Cb_Value - 128) );
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP( Y_Value - 0.344 * (Cb_Value - 128) - 0.714 * (Cr_Value - 128) );
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP( Y_Value + 1.722 * (Cb_Value - 128) );
+				break;
+			case _ImageColorType::kITU_R_BT709:
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.28033 * (Cr_Value - 128));
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.21482 * (Cb_Value - 128) - 0.38059 * (Cr_Value - 128));
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.12798 * (Cb_Value - 128));
+				break;
+			}
+		}
+	}
 }
 
 //@brief yuv420p image data를 rgb data로 변환하는 함수
 //@param src_item 변환하기 위한 yuv420 data 정보를 담은 item
-//@param dst_item 변환된 데이터가 저장될 item
 void YUV420PToRGB(ImageItem src_item, ImageItem dst_item)
 {
 
@@ -561,15 +619,71 @@ void YUV420PToRGB(ImageItem src_item, ImageItem dst_item)
 
 //@brief yuv422p image data를 rgb data로 변환하는 함수
 //@param src_item 변환하기 위한 yuv422 data 정보를 담은 item
-//@param dst_item 변환된 데이터가 저장될 item
 void YUV422PToRGB(ImageItem src_item, ImageItem dst_item)
 {
+	// allocation image channel
+	unsigned char *Y_Channel, *Cb_Channel, *Cr_Channel, *Cb_up_Channel, *Cr_up_Channel;
 
+	Y_Channel = new unsigned char[src_item.width * src_item.height];		// file read
+	memcpy(Y_Channel, src_item.data, src_item.width * src_item.height);
+
+	Cb_Channel = new unsigned char[src_item.width * src_item.height / 2];	// file read
+	memcpy(Cb_Channel, &src_item.data[src_item.width * src_item.height], src_item.width * src_item.height / 2);
+
+	Cr_Channel = new unsigned char[src_item.width * src_item.height / 2];	// file read
+	memcpy(Cr_Channel, &src_item.data[src_item.width * src_item.height * 3 / 2], src_item.width * src_item.height / 2);
+
+	Cb_up_Channel = new unsigned char[src_item.width * src_item.height];	// Cb channel Up-sampling
+	Cr_up_Channel = new unsigned char[src_item.width * src_item.height];	// Cr channel Up-sampling
+
+	for (int r_idx = 0; r_idx < src_item.height; r_idx++)								// CbCr 채널 Up-sampling
+	{
+		for (int c_idx = 0, cbcr_up_idx = 0; c_idx < src_item.width / 2; cbcr_up_idx = cbcr_up_idx + 2, c_idx++)
+		{
+			Cb_up_Channel[(r_idx * src_item.width) + cbcr_up_idx] = Cb_Channel[(r_idx * src_item.width / 2) + c_idx];
+			Cb_up_Channel[(r_idx * src_item.width) + cbcr_up_idx + 1] = Cb_Channel[(r_idx * src_item.width / 2) + c_idx];
+
+			Cr_up_Channel[(r_idx * src_item.width) + cbcr_up_idx] = Cr_Channel[(r_idx * src_item.width / 2) + c_idx];
+			Cr_up_Channel[(r_idx * src_item.width) + cbcr_up_idx + 1] = Cr_Channel[(r_idx * src_item.width / 2) + c_idx];
+		}
+	}
+
+	dst_item.data = new unsigned char[src_item.width * src_item.height * 3];
+
+	// YUV422 to RGB
+	for (int r_idx = 0; r_idx < src_item.height; r_idx++)
+	{
+		for (int c_idx = 0; c_idx < src_item.width; c_idx++)
+		{
+			unsigned char Y_Value = Y_Channel[(r_idx * src_item.width) + c_idx];
+			//YUV
+			unsigned char Cb_Value = Cb_up_Channel[(r_idx * src_item.width) + c_idx];
+			unsigned char Cr_Value = Cr_up_Channel[(r_idx * src_item.width) + c_idx];
+
+			switch (src_item.img_color_type)
+			{
+			case _ImageColorType::kITU_R_BT470:
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.13983 * (Cb_Value - 128));
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.39465 * (Cb_Value - 128) - 0.58060 * (Cr_Value - 128));
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.0321 * (Cb_Value - 128));
+				break;
+			case _ImageColorType::kITU_R_BT601:
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.402 * (Cb_Value - 128));
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.344 * (Cb_Value - 128) - 0.714 * (Cr_Value - 128));
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 1.722 * (Cb_Value - 128));
+				break;
+			case _ImageColorType::kITU_R_BT709:
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.28033 * (Cr_Value - 128));
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.21482 * (Cb_Value - 128) - 0.38059 * (Cr_Value - 128));
+				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.12798 * (Cb_Value - 128));
+				break;
+			}
+		}
+	}
 }
 
 //@brief raw image data를 rgb data로 변환하는 함수
 //@param src_item 변환하기 위한 raw data 정보를 담은 item
-//@param dst_item 변환된 데이터가 저장될 item
 void RawToRGB(ImageItem src_item, ImageItem dst_item)
 {
 	switch (src_item.img_format)
@@ -589,41 +703,74 @@ void RawToRGB(ImageItem src_item, ImageItem dst_item)
 	default:
 		break;
 	}
+
+	dst_item.width = src_item.width;
+	dst_item.height = src_item.height;
+	dst_item.channels = RGB_CAHNNEL;
+	dst_item.img_format = src_item.img_format;
+	dst_item.img_color_type = src_item.img_color_type;
+	dst_item.path = src_item.path;
 }
+//FIXME :: 함수 호출 방법과 raw open에 대한 플래그 관리에 대해 변경할 것
 //@brief MenuBar를 통해 열기한 이미지파일들로부터 이미지 원본 데이터를 생성하는 함수
-//@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
+//@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수	
 void CreateImageItems(UIItems *items, bool is_raw)
 {
 	int image_idx = 0;
 
-	for (auto img_path : items->v_open_img_path)
+	if (is_raw && items->v_raw_item.size() > 0)
 	{
-		if (items->v_img_item.size() > image_idx++)
+		for (auto raw_item : items->v_raw_item)
 		{
-			continue;
+			if (items->v_img_item.size() > image_idx++)
+			{
+				continue;
+			}
+
+			ImageItem dst_png_item;
+
+			if (is_raw)
+			{
+				int read_file_size = 0;
+				std::ifstream read_raw_file(raw_item.path.c_str(), std::ios::binary);
+
+				read_raw_file.seekg(0, std::ios::end);
+				read_file_size = read_raw_file.tellg();
+				read_raw_file.seekg(0);
+
+				//raw 파일 크기만큼 데이터 영역 확보
+				raw_item.data = new unsigned char[read_file_size];
+
+				read_raw_file.read(reinterpret_cast<char*>(raw_item.data), read_file_size);
+
+				RawToRGB(raw_item, dst_png_item);
+			}
+
+			items->v_img_item.push_back(dst_png_item);
 		}
-
-		ImageItem input_img_item;
-		ImageItem margin_png_item;
-
-		input_img_item.path = img_path;
-
-		if (is_raw)
+	}
+	else
+	{
+		for (auto img_path : items->v_open_img_path)
 		{
+			if (items->v_img_item.size() > image_idx++)
+			{
+				continue;
+			}
 
-		}
-		else
-		{
-			input_img_item.data = stbi_load(img_path.c_str(), &input_img_item.width, &input_img_item.height, &input_img_item.channels, 0);
+			ImageItem src_img_item;
+			ImageItem dst_png_item;
+
+			src_img_item.path = img_path;
+
+			src_img_item.data = stbi_load(img_path.c_str(), &src_img_item.width, &src_img_item.height, &src_img_item.channels, 0);
 
 			// stbi_load 사용 시 일부 png 파일을 제대로 읽지 못하는 경우가 있음. 따라서 포맷을 한번 재정렬 해주기 위해
 			// CreateMarginImage를 호출하여 처리해줌.
-			CreateMarginImage(input_img_item, 0, &margin_png_item);
+			CreateMarginImage(src_img_item, 0, &dst_png_item);
 
-			margin_png_item.img_format = input_img_item.channels == 3 ? ImageFormat::kRGB : ImageFormat::kRGBA;
+			items->v_img_item.push_back(dst_png_item);
 		}
-
-		items->v_img_item.push_back(margin_png_item);
 	}
 }
 
@@ -712,11 +859,18 @@ int main(int, char**)
 			g_menu_items.active_preview_image = true;
 		}
 		// 이미지 파일을 open하여 image list view에 반영
-		else if (g_menu_items.is_open_files)
+		else if (g_menu_items.is_open_files && !g_menu_items.is_open_raw_file)
 		{
-			CreateImageItems(&g_menu_items, g_menu_items.is_open_raw_file);
+			//FIXME :: 함수 호출 방법과 raw open에 대한 플래그 관리에 대해 변경할 것
+			CreateImageItems(&g_menu_items, false);
 
 			g_menu_items.is_open_files = false;
+		}
+		else if (g_menu_items.is_open_raw_file)
+		{
+			//FIXME :: 함수 호출 방법과 raw open에 대한 플래그 관리에 대해 변경할 것
+			CreateImageItems(&g_menu_items, true);
+			g_menu_items.is_open_raw_file = false;
 		}
 		// image list view에서 특정 이미지들을 visible하고 merge할 경우 처리하는 구문
 		else if (g_menu_items.active_list_merge)

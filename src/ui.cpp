@@ -404,7 +404,7 @@ void DrawPreView(UIItems *items, ImageItem *view_item)
 					case kViewView:
 						if (items->active_preview_video)
 						{	
-							DrawVideoView(true, items->v_raw_item);
+
 						}
 						break;
 					}
@@ -485,11 +485,13 @@ bool DrawRawPropertyView(UIItems *items, int raw_file_idx)
 		std::string item_name_str = "Item name : " + cur_raw_item.path;
 
 		static int select_format_idx = -1;
+		static int select_color_type_idx = -1;
 
 		ImGui::Text(item_name_str.c_str());
-		ImGui::Text("Width          ");	ImGui::SameLine();		ImGui::SetNextItemWidth(150); static char width_text_buf[20] = ""; ImGui::InputText("##Width Text Input", width_text_buf, 20, ImGuiInputTextFlags_CharsDecimal);
-		ImGui::Text("Height         ");	ImGui::SameLine();		ImGui::SetNextItemWidth(150); static char height_text_buf[20] = ""; ImGui::InputText("##Height Text Input", height_text_buf, 20, ImGuiInputTextFlags_CharsDecimal);
-		ImGui::Text("Image Format   ");	ImGui::SameLine();		ImGui::SetNextItemWidth(150); ImGui::Combo("##Image Format Combo", &select_format_idx, image_format_str, kFormatMax);
+		ImGui::Text("Width              ");	ImGui::SameLine();		ImGui::SetNextItemWidth(150); static char width_text_buf[20] = ""; ImGui::InputText("##Width Text Input", width_text_buf, 20, ImGuiInputTextFlags_CharsDecimal);
+		ImGui::Text("Height             ");	ImGui::SameLine();		ImGui::SetNextItemWidth(150); static char height_text_buf[20] = ""; ImGui::InputText("##Height Text Input", height_text_buf, 20, ImGuiInputTextFlags_CharsDecimal);
+		ImGui::Text("Image Format       ");	ImGui::SameLine();		ImGui::SetNextItemWidth(150); ImGui::Combo("##Image Format Combo", &select_format_idx, image_format_str, kFormatMax);
+		ImGui::Text("Color Conversion   ");	ImGui::SameLine();		ImGui::SetNextItemWidth(150); ImGui::Combo("##Image Color type Combo", &select_color_type_idx, image_color_type_str, kColorTypeMax);
 		// hard coding. center alinment for button
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 360.0f / 3);
 
@@ -498,6 +500,8 @@ bool DrawRawPropertyView(UIItems *items, int raw_file_idx)
 			items->v_raw_item.at(raw_file_idx).width = atoi(width_text_buf);
 			items->v_raw_item.at(raw_file_idx).height = atoi(height_text_buf);
 			items->v_raw_item.at(raw_file_idx).img_format = static_cast<_ImageFormat>(select_format_idx);
+			items->v_raw_item.at(raw_file_idx).img_color_type = static_cast<_ImageColorType>(select_color_type_idx);
+
 			is_open = false;
 		}
 		ImGui::EndPopup();
@@ -656,7 +660,7 @@ void DrawMenuBar(UIItems *items)
 		}
 		else
 		{
-			items->is_open_raw_file = false;
+			//items->is_open_raw_file = false;
 		}
 	}
 

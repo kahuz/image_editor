@@ -60,7 +60,7 @@
 
 #define UI_RAW_PROPERTY_POPUP_TITLE		"RawPropertyPopup"
 #define UI_RAW_PROPERTY_POPUP_SIZE_W	320.0f
-#define UI_RAW_PROPERTY_POPUP_SIZE_H	150.0f
+#define UI_RAW_PROPERTY_POPUP_SIZE_H	180.0f
 
 // open image list¿« max value
 #define UI_IMAGE_LIST_VIEW_ITEM_MAX 100

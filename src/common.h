@@ -15,7 +15,8 @@
 struct _ImageItem {
 	std::string path;								// image file path
 
-	ImageFormat img_format = ImageFormat::kNone;	// image format
+	_ImageFormat img_format			= _ImageFormat::kFormatNone;		// image format
+	_ImageColorType img_color_type	= _ImageColorType::kColorNone;	// image color conversion
 	unsigned char *data = nullptr;					// image raw data
 	int width = 0;									// image width
 	int height = 0;									// image height
