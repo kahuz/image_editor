@@ -400,6 +400,10 @@ void DrawPreView(UIItems *items, ImageItem *view_item)
 						{
 							DrawImageView(true, view_item);
 						}
+						else if (g_selected_list_item >= 0)
+						{
+							DrawImageView(true, &items->v_img_item.at(g_selected_list_item));
+						}
 						break;
 					case kViewView:
 						if (items->active_preview_video)
@@ -464,18 +468,18 @@ bool DrawRawPropertyView(UIItems *items, int raw_file_idx)
 	ImGui::SetNextWindowSize(ImVec2(UI_RAW_PROPERTY_POPUP_SIZE_W, UI_RAW_PROPERTY_POPUP_SIZE_H));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, UI_VIEW_DEFALUT_ROUND);
 	
-	if (ImGui::BeginPopupModal(UI_RAW_PROPERTY_POPUP_TITLE, &is_open, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal(UI_RAW_PROPERTY_POPUP_TITLE, NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		if (raw_file_idx >= items->v_raw_item.size())
 		{
 			ImageItem raw_item;
 
-			std::string item_path = items->v_open_img_path.at(raw_file_idx);
-			// 현재 이미지를 open 한 정체 경로에서 파일 이름만 긁어옴
-			size_t str_first_idx = item_path.rfind(SEPARATE_STR);
-			std::string raw_name_str = item_path.substr(str_first_idx + SEPARATE_STR_LENGTH, item_path.length());
+			//std::string item_path = items->v_open_img_path.at(raw_file_idx);
+			//// 현재 이미지를 open 한 정체 경로에서 파일 이름만 긁어옴
+			//size_t str_first_idx = item_path.rfind(SEPARATE_STR);
+			//std::string raw_name_str = item_path.substr(str_first_idx + SEPARATE_STR_LENGTH, item_path.length());
 
-			raw_item.path = raw_name_str;
+			raw_item.path = items->v_open_img_path.at(raw_file_idx);
 
 			items->v_raw_item.push_back(raw_item);
 		}
@@ -514,7 +518,7 @@ bool DrawRawPropertyView(UIItems *items, int raw_file_idx)
 //@breif Files 메뉴에 해당하는 UI
 //@details  File Dialog로 선택된 이미지를 바로 병합/변환 하거나 이미지 리스트에 반영하기 위한 액션을 결정하기 위한 함수
 //@param items Menubar에서 선택한 옵션들을 확인하기 위한 변수
-void DrawFilesMenuBar(UIItems *items)
+void DrawFilesMenuBar(UIItems *items, bool *open_raw_file)
 {
 	// file dialog로부터 이미지를 오픈한 뒤 바로 이미지 병합 하기 위한 구문
 	if (ImGui::MenuItem("Open - Direct Merge"))
@@ -598,10 +602,12 @@ void DrawFilesMenuBar(UIItems *items)
 			// raw 확장자인지 확인
 			if (ext_str.compare(".raw") == 0)
 			{
-				items->is_open_raw_file = true;
+				*open_raw_file = true;
 			}
-
-			items->is_open_files = true;
+			else
+			{
+				items->is_open_files = true;
+			}
 
 			NFD_PathSet_Free(&outPath);
 		}
@@ -624,12 +630,13 @@ void DrawMenuBar(UIItems *items)
 {
 	// 특정 액션에 따라 modal을 띄우기 위한 boolean 변수
 	static bool open_modal = false;
+	static bool open_raw_file = false;
 
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("[ Files ]"))
 		{
-			DrawFilesMenuBar(items);
+			DrawFilesMenuBar(items, &open_raw_file);
 
 			ImGui::EndMenu();
 		}
@@ -647,7 +654,7 @@ void DrawMenuBar(UIItems *items)
 		ImGui::EndMainMenuBar();
 	}
 
-	if (items->is_open_raw_file)
+	if (open_raw_file)
 	{
 		static int raw_file_idx = 0;
 
@@ -660,7 +667,8 @@ void DrawMenuBar(UIItems *items)
 		}
 		else
 		{
-			//items->is_open_raw_file = false;
+			open_raw_file = false;
+			items->is_open_raw_file = true;
 		}
 	}
 

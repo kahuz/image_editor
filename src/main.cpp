@@ -537,73 +537,135 @@ void RawConvertImages(UIItems *items, ImageItem *item, bool is_direct)
 
 //@brief yvu420p image data를 rgb data로 변환하는 함수
 //@param src_item 변환하기 위한 yvu420 data 정보를 담은 item
-void YVU420PToRGB(ImageItem src_item, ImageItem dst_item)
-{
-
-}
-
-//@brief yvu422p image data를 rgb data로 변환하는 함수
-//@param src_item 변환하기 위한 yvu422 data 정보를 담은 item
-void YVU422PToRGB(ImageItem src_item, ImageItem dst_item)
+void YVU420PToRGB(ImageItem *src_item, ImageItem *dst_item)
 {
 	// allocation image channel
 	unsigned char *Y_Channel, *Cb_Channel, *Cr_Channel, *Cb_up_Channel, *Cr_up_Channel;
 
-	Y_Channel = new unsigned char[src_item.width * src_item.height];		// file read
-	memcpy(Y_Channel, src_item.data, src_item.width * src_item.height);
+	Y_Channel = new unsigned char[src_item->width * src_item->height];		// file read
+	memcpy(Y_Channel, src_item->data, src_item->width * src_item->height);
 
-	Cb_Channel = new unsigned char[src_item.width * src_item.height / 2];	// file read
-	memcpy(Cb_Channel, &src_item.data[src_item.width * src_item.height], src_item.width * src_item.height / 2);
+	Cb_Channel = new unsigned char[src_item->width * src_item->height / 4];	// file read
+	memcpy(Cb_Channel, &src_item->data[src_item->width * src_item->height], src_item->width * src_item->height / 4);
 
-	Cr_Channel = new unsigned char[src_item.width * src_item.height / 2];	// file read
-	memcpy(Cr_Channel, &src_item.data[src_item.width * src_item.height * 3 / 2], src_item.width * src_item.height / 2);
+	Cr_Channel = new unsigned char[src_item->width * src_item->height / 4];	// file read
+	memcpy(Cr_Channel, &src_item->data[src_item->width * src_item->height * 5 / 4], src_item->width * src_item->height / 4);
 
-	Cb_up_Channel = new unsigned char[src_item.width * src_item.height];	// Cb channel Up-sampling
-	Cr_up_Channel = new unsigned char[src_item.width * src_item.height];	// Cr channel Up-sampling
+	Cb_up_Channel = new unsigned char[src_item->width * src_item->height];	// Cb channel Up-sampling
+	Cr_up_Channel = new unsigned char[src_item->width * src_item->height];	// Cr channel Up-sampling
 
-	for (int r_idx = 0; r_idx < src_item.height; r_idx++)								// CbCr 채널 Up-sampling
+	for (int r_idx = 0, r_up_idx = 0; r_idx < src_item->height / 2; r_up_idx += 2, r_idx++)								// CbCr 채널 Up-sampling
 	{
-		for (int c_idx = 0, cbcr_up_idx = 0; c_idx < src_item.width / 2; cbcr_up_idx = cbcr_up_idx + 2, c_idx++)
+		for (int c_idx = 0, c_up_idx = 0; c_idx < src_item->width / 2; c_up_idx += 2, c_idx++)
 		{
-			Cb_up_Channel[(r_idx * src_item.width) + cbcr_up_idx] = Cb_Channel[(r_idx * src_item.width / 2) + c_idx];
-			Cb_up_Channel[(r_idx * src_item.width) + cbcr_up_idx + 1] = Cb_Channel[(r_idx * src_item.width / 2) + c_idx];
+			Cb_up_Channel[((r_up_idx)* src_item->width) + c_up_idx] = Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cb_up_Channel[((r_up_idx + 1) * src_item->width) + c_up_idx] = Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cb_up_Channel[((r_up_idx)* src_item->width) + c_up_idx + 1] = Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cb_up_Channel[((r_up_idx + 1) * src_item->width) + c_up_idx + 1] = Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
 
-			Cr_up_Channel[(r_idx * src_item.width) + cbcr_up_idx] = Cr_Channel[(r_idx * src_item.width / 2) + c_idx];
-			Cr_up_Channel[(r_idx * src_item.width) + cbcr_up_idx + 1] = Cr_Channel[(r_idx * src_item.width / 2) + c_idx];
+			Cr_up_Channel[((r_up_idx)* src_item->width) + c_up_idx] = Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cr_up_Channel[((r_up_idx + 1) * src_item->width) + c_up_idx] = Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cr_up_Channel[((r_up_idx)* src_item->width) + c_up_idx + 1] = Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cr_up_Channel[((r_up_idx + 1) * src_item->width) + c_up_idx + 1] = Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
 		}
 	}
 
-	dst_item.data = new unsigned char[src_item.width * src_item.height * 3];
+	dst_item->data = new unsigned char[src_item->width * src_item->height * 3];
 
-	// YUV422 to RGB
-	for (int r_idx = 0; r_idx < src_item.height; r_idx++)
+	// YUV to RGB
+	for (int r_idx = 0; r_idx < src_item->height; r_idx++)
 	{
-		for (int c_idx = 0; c_idx < src_item.width; c_idx++)
+		for (int c_idx = 0; c_idx < src_item->width; c_idx++)
 		{
-			unsigned char Y_Value = Y_Channel[(r_idx * src_item.width) + c_idx];
+			unsigned char Y_Value = Y_Channel[(r_idx * src_item->width) + c_idx];
 			//YUV
-			//unsigned char Cb_Value = Cb_up_Channel[(r_idx * src_item.width) + c_idx];
-			//unsigned char Cr_Value = Cr_up_Channel[(r_idx * src_item.width) + c_idx];
-			//YVU
-			unsigned char Cb_Value = Cr_up_Channel[(r_idx * src_item.width) + c_idx];
-			unsigned char Cr_Value = Cb_up_Channel[(r_idx * src_item.width) + c_idx];
+			unsigned char Cb_Value = Cr_up_Channel[(r_idx * src_item->width) + c_idx];
+			unsigned char Cr_Value = Cb_up_Channel[(r_idx * src_item->width) + c_idx];
 
-			switch (src_item.img_color_type)
+			switch (src_item->img_color_type)
 			{
 			case _ImageColorType::kITU_R_BT470:
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.13983 * (Cb_Value - 128));
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.39465 * (Cb_Value - 128) - 0.58060 * (Cr_Value - 128));
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.0321 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.13983 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.39465 * (Cb_Value - 128) - 0.58060 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.0321 * (Cb_Value - 128));
 				break;
 			case _ImageColorType::kITU_R_BT601:
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP( Y_Value + 1.402 * (Cb_Value - 128) );
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP( Y_Value - 0.344 * (Cb_Value - 128) - 0.714 * (Cr_Value - 128) );
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP( Y_Value + 1.722 * (Cb_Value - 128) );
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.402 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.344 * (Cb_Value - 128) - 0.714 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 1.722 * (Cb_Value - 128));
 				break;
 			case _ImageColorType::kITU_R_BT709:
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.28033 * (Cr_Value - 128));
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.21482 * (Cb_Value - 128) - 0.38059 * (Cr_Value - 128));
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.12798 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.28033 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.21482 * (Cb_Value - 128) - 0.38059 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.12798 * (Cb_Value - 128));
+				break;
+			}
+		}
+	}
+}
+
+//@brief yvu422p image data를 rgb data로 변환하는 함수
+//@param src_item 변환하기 위한 yvu422 data 정보를 담은 item
+void YVU422PToRGB(ImageItem *src_item, ImageItem *dst_item)
+{
+	// allocation image channel
+	unsigned char *Y_Channel, *Cb_Channel, *Cr_Channel, *Cb_up_Channel, *Cr_up_Channel;
+
+	Y_Channel = new unsigned char[src_item->width * src_item->height];		// file read
+	memcpy(Y_Channel, src_item->data, src_item->width * src_item->height);
+
+	Cb_Channel = new unsigned char[src_item->width * src_item->height / 2];	// file read
+	memcpy(Cb_Channel, &src_item->data[src_item->width * src_item->height], src_item->width * src_item->height / 2);
+
+	Cr_Channel = new unsigned char[src_item->width * src_item->height / 2];	// file read
+	memcpy(Cr_Channel, &src_item->data[src_item->width * src_item->height * 3 / 2], src_item->width * src_item->height / 2);
+
+	Cb_up_Channel = new unsigned char[src_item->width * src_item->height];	// Cb channel Up-sampling
+	Cr_up_Channel = new unsigned char[src_item->width * src_item->height];	// Cr channel Up-sampling
+
+	for (int r_idx = 0; r_idx < src_item->height; r_idx++)								// CbCr 채널 Up-sampling
+	{
+		for (int c_idx = 0, cbcr_up_idx = 0; c_idx < src_item->width / 2; cbcr_up_idx = cbcr_up_idx + 2, c_idx++)
+		{
+			Cb_up_Channel[(r_idx * src_item->width) + cbcr_up_idx] = Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cb_up_Channel[(r_idx * src_item->width) + cbcr_up_idx + 1] = Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
+
+			Cr_up_Channel[(r_idx * src_item->width) + cbcr_up_idx] = Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cr_up_Channel[(r_idx * src_item->width) + cbcr_up_idx + 1] = Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
+		}
+	}
+
+	dst_item->data = new unsigned char[src_item->width * src_item->height * 3];
+
+	// YUV to RGB
+	for (int r_idx = 0; r_idx < src_item->height; r_idx++)
+	{
+		for (int c_idx = 0; c_idx < src_item->width; c_idx++)
+		{
+			unsigned char Y_Value = Y_Channel[(r_idx * src_item->width) + c_idx];
+			//YUV
+			//unsigned char Cb_Value = Cb_up_Channel[(r_idx * src_item->width) + c_idx];
+			//unsigned char Cr_Value = Cr_up_Channel[(r_idx * src_item->width) + c_idx];
+			//YVU
+			unsigned char Cb_Value = Cr_up_Channel[(r_idx * src_item->width) + c_idx];
+			unsigned char Cr_Value = Cb_up_Channel[(r_idx * src_item->width) + c_idx];
+
+			switch (src_item->img_color_type)
+			{
+			case _ImageColorType::kITU_R_BT470:
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.13983 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.39465 * (Cb_Value - 128) - 0.58060 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.0321 * (Cb_Value - 128));
+				break;
+			case _ImageColorType::kITU_R_BT601:
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP( Y_Value + 1.402 * (Cb_Value - 128) );
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP( Y_Value - 0.344 * (Cb_Value - 128) - 0.714 * (Cr_Value - 128) );
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP( Y_Value + 1.722 * (Cb_Value - 128) );
+				break;
+			case _ImageColorType::kITU_R_BT709:
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.28033 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.21482 * (Cb_Value - 128) - 0.38059 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.12798 * (Cb_Value - 128));
 				break;
 			}
 		}
@@ -612,70 +674,132 @@ void YVU422PToRGB(ImageItem src_item, ImageItem dst_item)
 
 //@brief yuv420p image data를 rgb data로 변환하는 함수
 //@param src_item 변환하기 위한 yuv420 data 정보를 담은 item
-void YUV420PToRGB(ImageItem src_item, ImageItem dst_item)
-{
-
-}
-
-//@brief yuv422p image data를 rgb data로 변환하는 함수
-//@param src_item 변환하기 위한 yuv422 data 정보를 담은 item
-void YUV422PToRGB(ImageItem src_item, ImageItem dst_item)
+void YUV420PToRGB(ImageItem *src_item, ImageItem *dst_item)
 {
 	// allocation image channel
 	unsigned char *Y_Channel, *Cb_Channel, *Cr_Channel, *Cb_up_Channel, *Cr_up_Channel;
 
-	Y_Channel = new unsigned char[src_item.width * src_item.height];		// file read
-	memcpy(Y_Channel, src_item.data, src_item.width * src_item.height);
+	Y_Channel = new unsigned char[src_item->width * src_item->height];		// file read
+	memcpy(Y_Channel, src_item->data, src_item->width * src_item->height);
 
-	Cb_Channel = new unsigned char[src_item.width * src_item.height / 2];	// file read
-	memcpy(Cb_Channel, &src_item.data[src_item.width * src_item.height], src_item.width * src_item.height / 2);
+	Cb_Channel = new unsigned char[src_item->width * src_item->height / 4];	// file read
+	memcpy(Cb_Channel, &src_item->data[src_item->width * src_item->height], src_item->width * src_item->height / 4);
 
-	Cr_Channel = new unsigned char[src_item.width * src_item.height / 2];	// file read
-	memcpy(Cr_Channel, &src_item.data[src_item.width * src_item.height * 3 / 2], src_item.width * src_item.height / 2);
+	Cr_Channel = new unsigned char[src_item->width * src_item->height / 4];	// file read
+	memcpy(Cr_Channel, &src_item->data[src_item->width * src_item->height * 5 / 4], src_item->width * src_item->height / 4);
 
-	Cb_up_Channel = new unsigned char[src_item.width * src_item.height];	// Cb channel Up-sampling
-	Cr_up_Channel = new unsigned char[src_item.width * src_item.height];	// Cr channel Up-sampling
+	Cb_up_Channel = new unsigned char[src_item->width * src_item->height];	// Cb channel Up-sampling
+	Cr_up_Channel = new unsigned char[src_item->width * src_item->height];	// Cr channel Up-sampling
 
-	for (int r_idx = 0; r_idx < src_item.height; r_idx++)								// CbCr 채널 Up-sampling
+	for (int r_idx = 0, r_up_idx = 0; r_idx < src_item->height / 2; r_up_idx += 2, r_idx++)								// CbCr 채널 Up-sampling
 	{
-		for (int c_idx = 0, cbcr_up_idx = 0; c_idx < src_item.width / 2; cbcr_up_idx = cbcr_up_idx + 2, c_idx++)
+		for (int c_idx = 0, c_up_idx = 0; c_idx < src_item->width / 2; c_up_idx += 2, c_idx++)
 		{
-			Cb_up_Channel[(r_idx * src_item.width) + cbcr_up_idx] = Cb_Channel[(r_idx * src_item.width / 2) + c_idx];
-			Cb_up_Channel[(r_idx * src_item.width) + cbcr_up_idx + 1] = Cb_Channel[(r_idx * src_item.width / 2) + c_idx];
+			Cb_up_Channel[((r_up_idx)* src_item->width) + c_up_idx]			= Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cb_up_Channel[((r_up_idx + 1) * src_item->width) + c_up_idx]	= Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cb_up_Channel[((r_up_idx)* src_item->width) + c_up_idx + 1]		= Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cb_up_Channel[((r_up_idx + 1) * src_item->width) + c_up_idx + 1]= Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
 
-			Cr_up_Channel[(r_idx * src_item.width) + cbcr_up_idx] = Cr_Channel[(r_idx * src_item.width / 2) + c_idx];
-			Cr_up_Channel[(r_idx * src_item.width) + cbcr_up_idx + 1] = Cr_Channel[(r_idx * src_item.width / 2) + c_idx];
+			Cr_up_Channel[((r_up_idx)* src_item->width) + c_up_idx]			= Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cr_up_Channel[((r_up_idx + 1) * src_item->width) + c_up_idx]	= Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cr_up_Channel[((r_up_idx)* src_item->width) + c_up_idx + 1]		= Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cr_up_Channel[((r_up_idx + 1) * src_item->width) + c_up_idx + 1]= Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
 		}
 	}
 
-	dst_item.data = new unsigned char[src_item.width * src_item.height * 3];
+	dst_item->data = new unsigned char[src_item->width * src_item->height * 3];
 
-	// YUV422 to RGB
-	for (int r_idx = 0; r_idx < src_item.height; r_idx++)
+	// YUV to RGB
+	for (int r_idx = 0; r_idx < src_item->height; r_idx++)
 	{
-		for (int c_idx = 0; c_idx < src_item.width; c_idx++)
+		for (int c_idx = 0; c_idx < src_item->width; c_idx++)
 		{
-			unsigned char Y_Value = Y_Channel[(r_idx * src_item.width) + c_idx];
+			unsigned char Y_Value = Y_Channel[(r_idx * src_item->width) + c_idx];
 			//YUV
-			unsigned char Cb_Value = Cb_up_Channel[(r_idx * src_item.width) + c_idx];
-			unsigned char Cr_Value = Cr_up_Channel[(r_idx * src_item.width) + c_idx];
+			unsigned char Cb_Value = Cb_up_Channel[(r_idx * src_item->width) + c_idx];
+			unsigned char Cr_Value = Cr_up_Channel[(r_idx * src_item->width) + c_idx];
 
-			switch (src_item.img_color_type)
+			switch (src_item->img_color_type)
 			{
 			case _ImageColorType::kITU_R_BT470:
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.13983 * (Cb_Value - 128));
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.39465 * (Cb_Value - 128) - 0.58060 * (Cr_Value - 128));
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.0321 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.13983 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.39465 * (Cb_Value - 128) - 0.58060 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.0321 * (Cb_Value - 128));
 				break;
 			case _ImageColorType::kITU_R_BT601:
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.402 * (Cb_Value - 128));
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.344 * (Cb_Value - 128) - 0.714 * (Cr_Value - 128));
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 1.722 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.402 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.344 * (Cb_Value - 128) - 0.714 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 1.722 * (Cb_Value - 128));
 				break;
 			case _ImageColorType::kITU_R_BT709:
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.28033 * (Cr_Value - 128));
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.21482 * (Cb_Value - 128) - 0.38059 * (Cr_Value - 128));
-				dst_item.data[(r_idx * src_item.width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.12798 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.28033 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.21482 * (Cb_Value - 128) - 0.38059 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.12798 * (Cb_Value - 128));
+				break;
+			}
+		}
+	}
+}
+
+//@brief yuv422p image data를 rgb data로 변환하는 함수
+//@param src_item 변환하기 위한 yuv422 data 정보를 담은 item
+void YUV422PToRGB(ImageItem *src_item, ImageItem *dst_item)
+{
+	// allocation image channel
+	unsigned char *Y_Channel, *Cb_Channel, *Cr_Channel, *Cb_up_Channel, *Cr_up_Channel;
+
+	Y_Channel = new unsigned char[src_item->width * src_item->height];		// file read
+	memcpy(Y_Channel, src_item->data, src_item->width * src_item->height);
+
+	Cb_Channel = new unsigned char[src_item->width * src_item->height / 2];	// file read
+	memcpy(Cb_Channel, &src_item->data[src_item->width * src_item->height], src_item->width * src_item->height / 2);
+
+	Cr_Channel = new unsigned char[src_item->width * src_item->height / 2];	// file read
+	memcpy(Cr_Channel, &src_item->data[src_item->width * src_item->height * 3 / 2], src_item->width * src_item->height / 2);
+
+	Cb_up_Channel = new unsigned char[src_item->width * src_item->height];	// Cb channel Up-sampling
+	Cr_up_Channel = new unsigned char[src_item->width * src_item->height];	// Cr channel Up-sampling
+
+	for (int r_idx = 0; r_idx < src_item->height; r_idx++)								// CbCr 채널 Up-sampling
+	{
+		for (int c_idx = 0, cbcr_up_idx = 0; c_idx < src_item->width / 2; cbcr_up_idx = cbcr_up_idx + 2, c_idx++)
+		{
+			Cb_up_Channel[(r_idx * src_item->width) + cbcr_up_idx] = Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cb_up_Channel[(r_idx * src_item->width) + cbcr_up_idx + 1] = Cb_Channel[(r_idx * src_item->width / 2) + c_idx];
+
+			Cr_up_Channel[(r_idx * src_item->width) + cbcr_up_idx] = Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
+			Cr_up_Channel[(r_idx * src_item->width) + cbcr_up_idx + 1] = Cr_Channel[(r_idx * src_item->width / 2) + c_idx];
+		}
+	}
+
+	dst_item->data = new unsigned char[src_item->width * src_item->height * 3];
+
+	// YUV to RGB
+	for (int r_idx = 0; r_idx < src_item->height; r_idx++)
+	{
+		for (int c_idx = 0; c_idx < src_item->width; c_idx++)
+		{
+			unsigned char Y_Value = Y_Channel[(r_idx * src_item->width) + c_idx];
+			//YUV
+			unsigned char Cb_Value = Cb_up_Channel[(r_idx * src_item->width) + c_idx];
+			unsigned char Cr_Value = Cr_up_Channel[(r_idx * src_item->width) + c_idx];
+
+			switch (src_item->img_color_type)
+			{
+			case _ImageColorType::kITU_R_BT470:
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.13983 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.39465 * (Cb_Value - 128) - 0.58060 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.0321 * (Cb_Value - 128));
+				break;
+			case _ImageColorType::kITU_R_BT601:
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.402 * (Cb_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.344 * (Cb_Value - 128) - 0.714 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 1.722 * (Cb_Value - 128));
+				break;
+			case _ImageColorType::kITU_R_BT709:
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_R_CAHNNEL] = CLIP(Y_Value + 1.28033 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_G_CAHNNEL] = CLIP(Y_Value - 0.21482 * (Cb_Value - 128) - 0.38059 * (Cr_Value - 128));
+				dst_item->data[(r_idx * src_item->width * RGB_CAHNNEL) + (RGB_CAHNNEL * c_idx) + RGBA_B_CAHNNEL] = CLIP(Y_Value + 2.12798 * (Cb_Value - 128));
 				break;
 			}
 		}
@@ -684,9 +808,9 @@ void YUV422PToRGB(ImageItem src_item, ImageItem dst_item)
 
 //@brief raw image data를 rgb data로 변환하는 함수
 //@param src_item 변환하기 위한 raw data 정보를 담은 item
-void RawToRGB(ImageItem src_item, ImageItem dst_item)
+void RawToRGB(ImageItem *src_item, ImageItem *dst_item)
 {
-	switch (src_item.img_format)
+	switch (src_item->img_format)
 	{
 	case kYUV420P:
 		YUV420PToRGB(src_item, dst_item);
@@ -704,12 +828,12 @@ void RawToRGB(ImageItem src_item, ImageItem dst_item)
 		break;
 	}
 
-	dst_item.width = src_item.width;
-	dst_item.height = src_item.height;
-	dst_item.channels = RGB_CAHNNEL;
-	dst_item.img_format = src_item.img_format;
-	dst_item.img_color_type = src_item.img_color_type;
-	dst_item.path = src_item.path;
+	dst_item->width = src_item->width;
+	dst_item->height = src_item->height;
+	dst_item->channels = RGB_CAHNNEL;
+	dst_item->img_format = src_item->img_format;
+	dst_item->img_color_type = src_item->img_color_type;
+	dst_item->path = src_item->path;
 }
 //FIXME :: 함수 호출 방법과 raw open에 대한 플래그 관리에 대해 변경할 것
 //@brief MenuBar를 통해 열기한 이미지파일들로부터 이미지 원본 데이터를 생성하는 함수
@@ -743,7 +867,7 @@ void CreateImageItems(UIItems *items, bool is_raw)
 
 				read_raw_file.read(reinterpret_cast<char*>(raw_item.data), read_file_size);
 
-				RawToRGB(raw_item, dst_png_item);
+				RawToRGB(&raw_item, &dst_png_item);
 			}
 
 			items->v_img_item.push_back(dst_png_item);
@@ -859,7 +983,7 @@ int main(int, char**)
 			g_menu_items.active_preview_image = true;
 		}
 		// 이미지 파일을 open하여 image list view에 반영
-		else if (g_menu_items.is_open_files && !g_menu_items.is_open_raw_file)
+		else if (g_menu_items.is_open_files)
 		{
 			//FIXME :: 함수 호출 방법과 raw open에 대한 플래그 관리에 대해 변경할 것
 			CreateImageItems(&g_menu_items, false);
@@ -872,7 +996,7 @@ int main(int, char**)
 			CreateImageItems(&g_menu_items, true);
 			g_menu_items.is_open_raw_file = false;
 		}
-		// image list view에서 특정 이미지들을 visible하고 merge할 경우 처리하는 구문
+		//// image list view에서 특정 이미지들을 visible하고 merge할 경우 처리하는 구문
 		else if (g_menu_items.active_list_merge)
 		{
 			MergedPngImages(&g_menu_items, &view_item, false);

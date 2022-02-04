@@ -102,9 +102,10 @@ void DrawImageListView(UIItems *items);
 void DrawPreView(UIItems *items, ImageItem *view_item);
 void DrawVideoView(bool visible, std::vector<ImageItem> v_frame_image);
 void DrawImageView( bool visible, ImageItem *img_item);
+bool DrawRawPropertyView(UIItems *items, int raw_file_idx);
 
 void DrawMenuBar(UIItems *items);
-void DrawFilesMenuBar(UIItems *items);
+void DrawFilesMenuBar(UIItems *items, bool *open_raw_file);
 
 void InitUIMember();
 
