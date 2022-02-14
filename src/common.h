@@ -17,6 +17,7 @@ struct _ImageItem {
 
 	_ImageFormat img_format			= _ImageFormat::kFormatNone;		// image format
 	_ImageColorType img_color_type	= _ImageColorType::kColorNone;	// image color conversion
+	unsigned int tex_id = -1;						// image texture id
 	unsigned char *data = nullptr;					// image raw data
 	int width = 0;									// image width
 	int height = 0;									// image height

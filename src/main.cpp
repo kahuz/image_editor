@@ -382,6 +382,8 @@ void CreateMarginImage(ImageItem item, int margin, ImageItem *margin_item)
 
 	std::string path = item.path.substr(str_first_idx + SEPARATE_STR_LENGTH, item.path.length());
 
+	glGenTextures(1, &margin_item->tex_id);
+
 	margin_item->path = path;
 	margin_item->width = column_max;
 	margin_item->height = row_max;
@@ -827,6 +829,8 @@ void RawToRGB(ImageItem *src_item, ImageItem *dst_item)
 	default:
 		break;
 	}
+	
+	glGenTextures(1, &dst_item->tex_id);
 
 	dst_item->width = src_item->width;
 	dst_item->height = src_item->height;

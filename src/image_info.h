@@ -39,7 +39,7 @@ static const char* image_format_str[kFormatMax] = {
 	"BGR",
 	"BGRA",
 	"YUV420P",
-	"YUU422P",
+	"YUV422P",
 	"YVU420P",
 	"YVU422P"
 };

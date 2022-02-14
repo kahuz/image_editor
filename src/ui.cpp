@@ -38,19 +38,18 @@ static void HelpMarker(const char* desc)
 }
 
 //@brief : rgb, rgba raw 데이터로 gl texture를 생성하는 함수
+//@param tex_id 이미지 텍스처 id
 //@param img_data 이미지 raw 데이터
 //@param width 이미지 width
 //@param height 이미지 height
 //@param channel 이미지 channel , rgb = 3 rgba = 4
-GLuint GetTextureId(const void *img_data, int width, int height, int channel)
+GLuint GetTextureId(GLuint tex_id, const void *img_data, int width, int height, int channel)
 {
 	GLint prev_texture;
-	GLuint tex_id;
 
 	//현재 그리고(Rendering) 있는 텍스처 아이디를 가져온다.
 	glGetIntegerv(GL_TEXTURE_BINDING_2D, &prev_texture);
 
-	glGenTextures(1, &tex_id);
 	glBindTexture(GL_TEXTURE_2D, tex_id);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -190,7 +189,7 @@ void DrawImageListView(UIItems *items)
 
 					if (g_image_table_visible[cur_idx])
 					{
-						GLuint tex_id = GetTextureId(item.data, item.width, item.height, item.channels);
+						GetTextureId(item.tex_id, item.data, item.width, item.height, item.channels);
 						ImVec2 item_area(item.width / image_ratio, item.height / image_ratio);
 						//table item를 선택하였다면 select tint를 아니라면 default tint
 						ImVec4 image_tint = g_selected_list_item == cur_idx ? DRAW_SELECT_TINT : DRAW_DEFAULT_TINT;
@@ -209,7 +208,7 @@ void DrawImageListView(UIItems *items)
 						}
 
 						ImGui::Image(
-							(ImTextureID)(intptr_t)tex_id,
+							(ImTextureID)(intptr_t)item.tex_id,
 							item_area,
 							DRAW_DEFAULT_UV_MIN,
 							DRAW_DEFAULT_UV_MAX,
@@ -289,7 +288,7 @@ void DrawVideoView(bool visible, std::vector<ImageItem> v_frame_image)
 		
 		ImageItem frame_item = v_frame_image[g_preview_video_idx++];
 
-		GLuint tex_id = GetTextureId(frame_item.data, frame_item.width, frame_item.height, frame_item.channels);
+		GetTextureId(frame_item.tex_id, frame_item.data, frame_item.width, frame_item.height, frame_item.channels);
 		float img_width = frame_item.width;
 		float img_height = frame_item.height;
 
@@ -311,7 +310,7 @@ void DrawVideoView(bool visible, std::vector<ImageItem> v_frame_image)
 		}
 
 		ImGui::Image(
-			(ImTextureID)(intptr_t)tex_id,
+			(ImTextureID)(intptr_t)frame_item.tex_id,
 			ImVec2(img_width / zoom_ratio, img_height / zoom_ratio),
 			DRAW_DEFAULT_UV_MIN,
 			DRAW_DEFAULT_UV_MAX,
@@ -331,7 +330,7 @@ void DrawImageView(bool visible, ImageItem *img_item)
 	{
 		// FIXME :: tex_id는 preview 이미지가 변경될 때만 생성하면 된다.
 		// image item의 raw data로 gl texure id 생성
-		GLuint tex_id = GetTextureId(img_item->data, img_item->width, img_item->height, img_item->channels);
+		GetTextureId(img_item->tex_id, img_item->data, img_item->width, img_item->height, img_item->channels);
 		float img_width = img_item->width;
 		float img_height = img_item->height;
 
@@ -353,7 +352,7 @@ void DrawImageView(bool visible, ImageItem *img_item)
 		}
 
 		ImGui::Image(
-			(ImTextureID)(intptr_t)tex_id,
+			(ImTextureID)(intptr_t)img_item->tex_id,
 			ImVec2(img_width / zoom_ratio, img_height / zoom_ratio),
 			DRAW_DEFAULT_UV_MIN,
 			DRAW_DEFAULT_UV_MAX,
