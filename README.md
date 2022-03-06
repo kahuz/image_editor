@@ -3,7 +3,7 @@
 OpenGL 프로그램 개발에 필요한 텍스처 병합 혹은 image processing과 관련되 이미지 변환과 같은 기능을 제공하는 툴
 
 ## 미리보기
-<iframe width="2200" height="1247" src="https://www.youtube.com/embed/fy84PfPDSso" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Image Editor demo video](http://img.youtube.com/vi/fy84PfPDSso/0.jpg)](https://www.youtube.com/watch?v=fy84PfPDSso)
 
 > 사진 클릭 시 Youtube 데모 영상 페이지로 넘어갑니다
 
